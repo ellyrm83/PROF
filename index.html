@@ -970,7 +970,8 @@ $('#pend').addEventListener('click',e=>{const d=e.target.closest('[data-del]');i
 $('#chat').addEventListener('click',e=>{const b=e.target.closest('[data-say]');if(b){speakOut(chat[+b.dataset.say].content);return}const v=e.target.closest('[data-view]');if(v){const [i,j]=v.dataset.view.split(':');lightbox(chat[+i].imgs[+j])}});
 
 /* ---------- voce ---------- */
-function voiceLines(text,lang){const parts=text.replace(/\*\*/g,'').split(/\n+/).map(x=>x.trim()).filter(Boolean);
+function speechClean(t){return String(t).replace(/\p{Extended_Pictographic}/gu,'').replace(/^\s*(?:[-•*+]|\d+[.)])\s+/gm,'').replace(/→/g,', quindi, ').replace(/←/g,', deriva da, ').replace(/↑/g,' aumenta ').replace(/↓/g,' diminuisce ').replace(/[*_`#~>|\[\]{}]/g,' ').replace(/\s+([,.;:!?])/g,'$1').replace(/[ \t]{2,}/g,' ')}
+function voiceLines(text,lang){const parts=speechClean(text).split(/\n+/).map(x=>x.trim()).filter(Boolean);
  return parts.map(t=>({text:t.slice(0,1900),language:lang||(mode==='inglese'&&!/^correzione\s*:/i.test(t)&&!/[àèéìòù]/i.test(t)?'en':'it')}))}
 let vz=ls.get('prof-vz',{voice:'rounded',rate:1});$('#vVoice').value=vz.voice;$('#vRate').value=String(vz.rate);
 $('#vVoice').addEventListener('change',e=>{vz.voice=e.target.value;ls.set('prof-vz',vz)});$('#vRate').addEventListener('change',e=>{vz.rate=+e.target.value;ls.set('prof-vz',vz);tts?.setRate?.(vz.rate)});
