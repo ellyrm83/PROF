@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PROF</title>
+<meta name="theme-color" content="#22313d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PROF">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="adapter.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: un insegnante caldo ma esigente; passi brevi, una cosa per volta
+   IDEA: la lavagna d'aula sopra il quaderno a quadretti
+   PICTURE: la lavagna con il percorso del metodo a gesso; sotto, il lavoro vivo (chat, esposizione, libri)
+   COLOUR and TYPE: ardesia, carta a quadretti, evidenziatore giallo, penna blu e rossa; Kalam + Atkinson Hyperlegible
+   LAYOUT: una colonna da quaderno, barra in basso stile app, bottoni grandi per tablet */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#141c24);--grid:light-dark(#e3ecf7,#1d2833);--ink:light-dark(#18202a,#e9eef3);--mute:light-dark(#5b6672,#9fadba);
+--board:#22313d;--board2:#2c3e4c;--chalk:#f3f5ef;--hi:#ffd53d;--pen:light-dark(#1b3fae,#8fb0ff);--red:light-dark(#c8321f,#ff8a78);--ok:light-dark(#1f7a4a,#7fd8a6);
+--card:light-dark(#ffffff,#1a2430);--line:light-dark(#d6dde6,#2b3845);--me:light-dark(#fff6c9,#3a3417)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html{scroll-padding-top:72px}
+body{margin:0;color:var(--ink);font:17px/1.55 "Atkinson Hyperlegible",system-ui,sans-serif;overflow-x:clip;
+background:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:22px 22px;
+padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+h1,h2,h3{font-family:Kalam,cursive;font-weight:700;line-height:1.05;text-wrap:balance;margin:0}
+h3{font-size:23px}
+button,input,select,textarea{font:inherit;font-size:16px;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--hi);outline-offset:2px}
+.wrap{max-width:900px;margin:0 auto;padding:0 max(4vw,14px)}
+.board{background:radial-gradient(120% 90% at 20% 0%,var(--board2),var(--board));color:var(--chalk);padding:calc(16px + env(safe-area-inset-top)) max(4vw,14px) 20px;border-bottom:10px solid #8a6a43;box-shadow:inset 0 -6px 0 #6d5233}
+.board .in{max-width:900px;margin:0 auto}
+.board h1{font-size:clamp(34px,7vw,50px)}
+.board p{margin:6px 0 0;color:#cfd8d2}
+.path{display:flex;flex-wrap:wrap;gap:6px 4px;margin-top:14px;align-items:center;font-family:Kalam,cursive}
+.path span{padding:2px 9px;font-size:16px;border:2px dashed #6f8596;border-radius:14px;color:#c6d1cb}
+.path span.ok{border-style:solid;border-color:var(--hi);color:var(--hi)}
+.path span.now{background:var(--hi);color:#22313d;border-color:var(--hi)}
+.path i{color:#7f97a6;font-style:normal}
+.focus{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.focus b{font-family:Kalam,cursive;font-size:26px;color:var(--hi)}
+.focus .bar{flex:1 1 120px;height:8px;background:#3d5262;border-radius:4px;overflow:hidden}.focus .bar i{display:block;height:100%;background:var(--hi)}
+.bbtn{min-height:44px;padding:6px 14px;border-radius:12px;border:2px solid var(--hi);background:transparent;color:var(--hi);font-weight:700}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{min-height:44px;padding:8px 16px;border-radius:12px;border:2px solid var(--pen);background:transparent;color:var(--pen);font-weight:700;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.full{background:var(--pen);color:var(--bg)}
+.btn.hi{background:var(--hi);border-color:var(--hi);color:#1c242c}
+.btn.red{border-color:var(--red);color:var(--red)}
+.btn.sm{min-height:38px;padding:4px 12px;font-size:15px}
+.btn.big{width:100%;min-height:62px;font-size:20px}
+.btn:disabled{opacity:.45;cursor:default}
+.chip{min-height:44px;padding:6px 14px;border-radius:22px;border:1.5px solid var(--line);background:var(--card);font-weight:700}
+.chip[aria-pressed=true]{background:var(--hi);border-color:var(--hi);color:#1c242c}
+label.f{display:block;font-weight:700;margin:12px 0 4px}
+input[type=text],select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)}
+textarea{min-height:110px;resize:vertical;line-height:1.5}
+.hint{color:var(--mute);font-size:15px;margin:4px 0}
+.mute{color:var(--mute)}
+.tog{display:flex;gap:8px;align-items:center;font-weight:700}.tog input{width:22px;height:22px;accent-color:var(--pen)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:1.5px solid var(--line);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 10px;text-decoration:none;color:var(--mute);font-weight:700;font-size:13px}
+nav.tabs a svg{width:26px;height:26px}
+nav.tabs a.on{color:var(--pen)}
+@media(min-width:900px){nav.tabs{max-width:900px;margin:0 auto;border:1.5px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0}}
+.view{display:none}.view.on{display:block}
+.chat{display:flex;flex-direction:column;gap:12px;margin:14px 0}
+.msg{max-width:88%;padding:12px 14px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.prof{align-self:flex-start;background:var(--card);border:1.5px solid var(--line);border-top-left-radius:4px}
+.msg b{background:linear-gradient(transparent 55%,color-mix(in srgb,var(--hi) 70%,transparent) 55%)}
+.msg.me{align-self:flex-end;background:var(--me);border-top-right-radius:4px}
+.who{font-family:Kalam,cursive;font-weight:700;color:var(--pen);display:block;margin-bottom:2px;font-size:18px}
+.composer{position:sticky;bottom:calc(72px + env(safe-area-inset-bottom));background:var(--bg);padding:10px 0;display:flex;gap:8px;align-items:flex-end}
+.composer textarea{min-height:52px;max-height:200px}
+.icon{width:48px;height:48px;flex:none;border-radius:50%;border:2px solid var(--pen);background:var(--card);color:var(--pen);display:grid;place-items:center}
+.icon.send{background:var(--pen);color:var(--bg)}
+.live{background:var(--red)!important;border-color:var(--red)!important;color:#fff!important;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{transform:scale(1.04)}}
+@media(prefers-reduced-motion:reduce){.live{animation:none}}
+.typing{color:var(--mute);font-style:italic}
+.mats{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.mats .chip{flex:none}
+.mats .chip[aria-selected=true]{background:var(--pen);border-color:var(--pen);color:var(--bg)}
+.note-line{align-self:center;font-size:13px;color:var(--mute);border:1px dashed var(--line);border-radius:12px;padding:2px 10px}
+.day{align-self:center;font-size:13px;font-weight:700;color:var(--mute);text-transform:capitalize}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.thumb{position:relative;width:78px;height:100px;border-radius:8px;border:1.5px solid var(--line);overflow:hidden;background:var(--grid);padding:0}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb span{position:absolute;left:0;right:0;bottom:0;font-size:11px;background:rgba(0,0,0,.6);color:#fff;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb .x{position:absolute;top:2px;right:2px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-weight:700;line-height:1;padding:0}
+.list{display:grid;gap:10px}
+.item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);text-align:left;width:100%}
+.item b{display:block}
+.meter{height:8px;border-radius:4px;background:var(--line);overflow:hidden;width:90px;flex:none}.meter i{display:block;height:100%;background:var(--pen)}
+.steps{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px}
+.steps button{flex:none;width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);font-weight:700}
+.steps button.done{border-color:var(--pen);color:var(--pen)}
+.steps button.cur{background:var(--pen);color:var(--bg);border-color:var(--pen)}
+.checks label{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line)}
+.checks input{width:22px;height:22px;flex:none;margin-top:2px;accent-color:var(--pen)}
+.mosse{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:10px}
+.mossa{border:1.5px solid var(--line);border-radius:12px;padding:12px;background:var(--card)}
+.mossa .n{font-family:Kalam,cursive;font-size:21px;color:var(--pen)}
+.mossa q{display:block;color:var(--mute);margin:2px 0 6px}
+.mossa input{padding:8px}
+.six{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0}
+.six span{text-align:center;padding:8px 4px;border-radius:10px;border:2px dashed var(--line);font-weight:700;font-size:15px;color:var(--mute);transition:all .3s}
+.six span.on{border:2px solid var(--ok);color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.clock{font-family:Kalam,cursive;font-size:clamp(44px,12vw,70px);line-height:1;color:var(--pen)}
+.tip{border-left:6px solid var(--hi);padding:10px 14px;background:color-mix(in srgb,var(--hi) 18%,transparent);border-radius:0 10px 10px 0;margin:10px 0;font-size:19px;font-weight:700;min-height:52px}
+.tip.err{border-color:var(--red);background:color-mix(in srgb,var(--red) 12%,transparent)}
+.lv{display:grid;gap:8px}
+.lv button{display:flex;gap:12px;align-items:center;text-align:left;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);min-height:56px}
+.lv button .d{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--pen);color:var(--pen);font-weight:700;flex:none}
+.lv button.done .d{background:var(--pen);color:var(--bg)}
+.lv button.sel{box-shadow:0 0 0 2px var(--pen) inset}
+.kw{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+details{border:1.5px solid var(--line);border-radius:12px;background:var(--card);margin:10px 0}
+summary{padding:14px;font-family:Kalam,cursive;font-weight:700;font-size:21px;cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:" +";color:var(--pen)}details[open]>summary::after{content:" –"}
+details>div{padding:0 16px 14px}
+details li{margin:3px 0}
+.note{border-left:5px solid var(--hi);padding:6px 12px;background:color-mix(in srgb,var(--hi) 16%,transparent);border-radius:0 8px 8px 0;margin:10px 0}
+.cap{border-top:1px dashed var(--line);padding:10px 0}
+.cap>b{display:block}
+.par{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0 6px 10px}
+.rec video,.rec audio{width:100%;border-radius:10px;background:#000;max-height:320px}
+.lightbox{position:fixed;inset:0;background:rgba(10,14,18,.92);z-index:20;display:grid;place-items:center;padding:16px}
+.lightbox img{max-width:100%;max-height:85vh;border-radius:8px}
+.lightbox button{position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px}
+.due{display:inline-block;font-size:13px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--grid);color:var(--mute);white-space:nowrap}
+.due.today{background:var(--red);color:#fff}.due.soon{background:var(--hi);color:#1c242c}
+.cmp{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:12px 0;border-top:1px dashed var(--line)}
+.cmp input{width:26px;height:26px;accent-color:var(--pen);margin-top:2px}
+.cmp.done .tx{opacity:.5;text-decoration:line-through}
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--board);color:var(--chalk);padding:10px 16px;border-radius:12px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30;max-width:90vw;text-align:center}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+
+<section class="view" id="v-prof">
+ <header class="board"><div class="in">
+  <h1>PROF</h1>
+  <p>Ti guido col tuo metodo, un passo alla volta.</p>
+  <div class="path" id="path1"></div>
+  <div class="focus" id="focus"></div>
+ </div></header>
+ <div class="wrap">
+  <div class="card">
+   <div class="mats" id="mats" role="tablist" aria-label="Materie"></div>
+   <div class="row" id="modes" role="group" aria-label="Che cosa facciamo" style="margin-top:10px"></div>
+   <p class="hint" id="modeHint"></p>
+   <div id="matComp"></div>
+   <label class="f" for="profScheda">Argomento</label>
+   <select id="profScheda"></select>
+   <div class="row" style="margin-top:12px;justify-content:space-between">
+    <label class="tog"><input type="checkbox" id="voiceOn">Parliamo a voce</label>
+    <div class="row"><button class="btn sm red" id="stopVoice" hidden>Ferma la voce</button><button class="btn sm" id="memBtn">Cosa ricorda il prof</button></div>
+   </div>
+   <div class="row" id="voiceSet" style="margin-top:8px" hidden><label class="hint" for="vVoice">Voce del prof</label><select id="vVoice" style="width:auto"><option value="rounded">Calda</option><option value="buttery">Morbida</option><option value="airy">Leggera</option><option value="glassy">Chiara</option></select><label class="hint" for="vRate">Velocità</label><select id="vRate" style="width:auto"><option value="0.9">Più lenta</option><option value="1">Normale</option><option value="1.1">Più veloce</option></select><button class="btn sm" id="vTry">Prova</button></div>
+   <p class="hint" id="voiceHint" hidden></p>
+   <div class="msg prof" id="memBox" hidden style="max-width:100%;margin-top:10px"></div>
+  </div>
+  <button class="btn sm" id="older" hidden style="margin-top:6px">Mostra i messaggi più vecchi</button>
+  <div id="noAI" class="card note" hidden>Il prof non riesce a rispondere: controlla la connessione. Se il problema resta, il servizio del prof va configurato (LEGGIMI, passo 6).</div>
+  <div class="chat" id="chat" aria-live="polite"></div>
+  <div class="row" id="quick"><button class="chip" data-q="Ok, vai avanti.">Vai avanti</button><button class="chip" data-q="(Alzo la mano) Prof, ho una domanda: ">Alzo la mano</button><button class="chip" data-q="Non ho capito, me lo rispieghi in modo più semplice?">Non ho capito</button><button class="chip" data-q="Mi fai un esempio concreto?">Un esempio</button><button class="chip" data-q="Dove trovo questo argomento nel mio libro?">Dov'è nel libro?</button></div>
+  <div class="thumbs" id="pend"></div>
+  <button class="btn hi big" id="talk" hidden style="margin-top:8px">Tocca e parla</button>
+  <div class="composer">
+   <button class="icon" id="clip" aria-label="Allega foto o PDF"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5 5 0 0 1-7.1-7.1l8.6-8.6a3.3 3.3 0 0 1 4.7 4.7l-8.6 8.6a1.7 1.7 0 0 1-2.4-2.4l7.9-7.9"/></svg></button>
+   <textarea id="say" placeholder="Scrivi o detta la tua risposta…" aria-label="La tua risposta"></textarea>
+   <button class="icon" id="mic" hidden aria-label="Detta a voce"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+   <button class="icon send" id="send" aria-label="Invia"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button>
+  </div>
+  <input type="file" id="clipIn" accept="image/*,application/pdf" multiple hidden>
+ </div>
+</section>
+
+<section class="view" id="v-compiti">
+ <header class="board"><div class="in">
+  <h1>Compiti</h1>
+  <p id="cSub">Fai lo screenshot dei compiti dal registro Axios e caricalo qui: il prof li organizza e ti prepara a studiare.</p>
+ </div></header>
+ <div class="wrap">
+  <div class="card">
+   <div class="row"><label class="btn hi" for="cShot">Carica screenshot dei compiti</label><label class="btn" for="cCam">Fai una foto</label><button class="btn" id="cPlan">Piano di oggi col prof</button></div>
+   <input type="file" id="cShot" accept="image/*,application/pdf" multiple hidden>
+   <input type="file" id="cCam" accept="image/*" capture="environment" hidden>
+   <p class="hint" id="cStatus">Su Axios apri <b>Compiti</b> (o l'agenda), fai lo screenshot della pagina e caricalo. Puoi caricarne più di uno.</p>
+  </div>
+  <div class="card links" data-links></div>
+  <div id="cList"></div>
+  <details><summary>Aggiungi un compito a mano</summary><div>
+   <div class="row" style="gap:10px"><div style="flex:1 1 160px"><label class="f" for="cMat">Materia</label><input type="text" id="cMat" list="materie"></div><div style="flex:1 1 160px"><label class="f" for="cDate">Per il giorno</label><input type="date" id="cDate" style="width:100%;padding:9px;border:1.5px solid var(--line);border-radius:10px;background:var(--card)"></div></div>
+   <label class="f" for="cTxt">Che cosa c'è da fare</label><input type="text" id="cTxt" placeholder="es. studiare pag. 34-38, es. 5 e 6 pag. 120">
+   <div class="row" style="margin-top:10px"><button class="btn full" id="cAdd">Aggiungi</button></div>
+  </div></details>
+ </div>
+</section>
+
+<section class="view" id="v-lezione">
+ <header class="board"><div class="in">
+  <h1>Lezioni e appunti</h1>
+  <p>Scrivi o fotografa gli appunti della lezione: il prof li riordina e li usa per farti studiare.</p>
+ </div></header>
+ <div class="wrap">
+  <div class="card">
+   <h3>Nuova lezione</h3>
+   <div class="row" style="gap:10px">
+    <div style="flex:1 1 160px"><label class="f" for="lMat">Materia</label><input type="text" id="lMat" list="materie"></div>
+    <div style="flex:2 1 200px"><label class="f" for="lArg">Argomento (se lo sai)</label><input type="text" id="lArg"></div>
+   </div>
+   <div id="lRec"><div class="row" style="justify-content:space-between;margin-top:12px"><span class="hint" id="lHint"></span><span class="clock" id="lClock">0:00</span></div>
+   <button class="btn hi big" id="lGo" style="margin-top:8px">Inizia ad ascoltare la lezione</button></div>
+   <textarea id="lRaw" placeholder="Scrivi o incolla qui gli appunti della lezione, anche disordinati: ci pensa il prof a sistemarli." style="min-height:150px;margin-top:10px"></textarea>
+   <div class="row" style="margin-top:8px"><label class="btn sm" for="lImg">Aggiungi foto della lavagna o degli appunti</label></div>
+   <input type="file" id="lImg" accept="image/*" multiple hidden>
+   <div class="thumbs" id="lThumbs"></div>
+   <button class="btn full big" id="lClean" style="margin-top:8px">Riordina gli appunti con il prof</button>
+   <p class="hint" id="lStatus"></p>
+  </div>
+  <div id="lList"></div>
+  <label class="tog hint" style="margin:10px 0 20px"><input type="checkbox" id="lRecOn">Attiva la registrazione delle lezioni col microfono (solo con Chrome)</label>
+ </div>
+</section>
+
+<section class="view" id="v-libri">
+ <header class="board"><div class="in">
+  <h1>I miei libri</h1>
+  <p>Carica l'indice di ogni libro: il prof troverà gli argomenti e le pagine.</p>
+ </div></header>
+ <div class="wrap">
+  <div class="card links" data-links></div>
+  <div class="card" id="addBook">
+   <h3>Aggiungi un libro</h3>
+   <div class="row" style="gap:10px">
+    <div style="flex:1 1 180px"><label class="f" for="bMat">Materia</label><input type="text" id="bMat" list="materie"></div>
+    <div style="flex:2 1 220px"><label class="f" for="bTit">Titolo del libro</label><input type="text" id="bTit"></div>
+   </div>
+   <label class="f">Indice</label>
+   <p class="hint">Fai una foto a ogni pagina dell'indice, oppure carica il PDF. In alternativa incolla l'indice qui sotto.</p>
+   <div class="row"><label class="btn" for="bPhoto">Fotografa l'indice</label><label class="btn" for="bFile">Carica foto o PDF</label></div>
+   <input type="file" id="bPhoto" accept="image/*" capture="environment" multiple hidden>
+   <input type="file" id="bFile" accept="image/*,application/pdf" multiple hidden>
+   <div class="thumbs" id="bThumbs"></div>
+   <textarea id="bText" placeholder="Oppure incolla o scrivi l'indice: un capitolo o paragrafo per riga" style="min-height:80px"></textarea>
+   <div class="row" style="margin-top:10px"><button class="btn full" id="bSave">Leggi l'indice e salva</button><span class="hint" id="bStatus"></span></div>
+  </div>
+  <div id="books"></div>
+ </div>
+</section>
+
+<section class="view" id="v-schede">
+ <header class="board"><div class="in">
+  <h1>Le mie schede</h1>
+  <p>Una scheda per ogni argomento, con le pagine e gli esercizi che carichi.</p>
+ </div></header>
+ <div class="wrap">
+  <div class="row" style="margin:16px 0"><button class="btn hi" id="addScheda">+ Nuova scheda</button><a class="btn" href="#libri">Scegli dal libro</a><a class="btn" href="#lezione">Lezioni e appunti</a><a class="btn" href="#metodo">Il mio metodo</a></div>
+  <div class="list" id="list"></div>
+  <p class="hint" id="saveWhere"></p>
+  <div class="row" style="margin:20px 0"><button class="btn sm red" id="logout">Esci dall'account</button></div>
+ </div>
+</section>
+
+<section class="view" id="v-scheda">
+ <header class="board"><div class="in">
+  <h1 id="edTitle">Scheda</h1>
+  <p id="edSub"></p>
+  <div class="path" id="path2"></div>
+ </div></header>
+ <div class="wrap">
+  <div class="card">
+   <div class="row" style="gap:10px">
+    <div style="flex:1 1 160px"><label class="f" for="fMat">Materia</label><input type="text" id="fMat" list="materie"></div>
+    <div style="flex:1 1 160px"><label class="f" for="fCap">Capitolo / pagine</label><input type="text" id="fCap"></div>
+   </div>
+   <label class="f" for="fTit">Argomento</label><input type="text" id="fTit">
+   <label class="f" for="fPag">Pagine del libro da studiare</label><input type="text" id="fPag" placeholder="es. 34-38" inputmode="numeric">
+   <p class="hint" id="fPagHint"></p>
+   <datalist id="materie"><option>Italiano</option><option>Storia e geografia</option><option>Latino</option><option>Inglese</option><option>Matematica</option><option>Fisica</option><option>Scienze</option><option>Informatica</option><option>Disegno e storia dell'arte</option></datalist>
+  </div>
+  <div class="card">
+   <h3>Materiali</h3>
+   <p class="hint">Pagine del libro, spiegazioni del professore, esercizi, documenti. Il prof li legge.</p>
+   <div class="row"><select id="mKind" style="width:auto"><option>Pagina del libro</option><option>Spiegazione</option><option>Esercizio</option><option>Appunti</option><option>Documento</option></select>
+   <label class="btn sm" for="mPhoto">Foto</label><label class="btn sm" for="mFile">Foto o PDF</label></div>
+   <input type="file" id="mPhoto" accept="image/*" capture="environment" multiple hidden>
+   <input type="file" id="mFile" accept="image/*,application/pdf" multiple hidden>
+   <div class="thumbs" id="mThumbs"></div>
+   <p class="hint" id="mStatus"></p>
+  </div>
+  <div class="card">
+   <div class="steps" id="steps"></div>
+   <h3 id="stTitle"></h3>
+   <p class="hint" id="stQ"></p>
+   <textarea id="stText" style="min-height:160px"></textarea>
+   <label class="tog" style="margin-top:8px"><input type="checkbox" id="liveOn" checked>Il prof corregge mentre scrivi</label>
+   <div class="msg prof" id="live" hidden style="max-width:100%;margin-top:8px"></div>
+   <div id="stExtra"></div>
+   <div class="row" style="justify-content:space-between;margin-top:10px">
+    <button class="btn sm" id="stPrev">Indietro</button>
+    <button class="btn sm" id="stHelp">Chiedi al prof</button>
+    <button class="btn sm full" id="stNext">Avanti</button>
+   </div>
+  </div>
+  <div class="row" style="justify-content:space-between;margin-bottom:20px">
+   <a class="btn sm" href="#schede">Tutte le schede</a>
+   <button class="btn sm red" id="delScheda">Elimina scheda</button>
+  </div>
+ </div>
+</section>
+
+<section class="view" id="v-esponi">
+ <header class="board"><div class="in">
+  <h1>Esponi</h1>
+  <p>Parla come all'interrogazione. Il prof ti ascolta, ti corregge e ti fa domande.</p>
+ </div></header>
+ <div class="wrap">
+  <div class="card"><label class="f" for="eScheda" style="margin-top:0">Argomento</label><select id="eScheda"></select></div>
+  <div class="card">
+   <div class="row" style="justify-content:space-between"><h3>Esponi al prof</h3><span class="clock" id="eClock">0:00</span></div>
+   <div class="six" id="six"></div>
+   <div class="tip" id="eTip">Premi Inizia e parla. Il prof ti segue mentre parli.</div>
+   <textarea id="eText" placeholder="Qui compare quello che dici. Se il microfono dell'app non c'è, tocca il microfono della tastiera e parla." style="min-height:150px"></textarea>
+   <div class="row" style="margin-top:10px"><button class="btn hi big" id="eGo" style="flex:2 1 200px">Inizia</button><button class="btn full big" id="eEnd" style="flex:1 1 140px" disabled>Ho finito</button></div>
+   <p class="hint" id="eHint"></p>
+  </div>
+  <div class="card" id="eFb" hidden>
+   <h3>Il commento del prof</h3>
+   <div class="msg prof" id="eFbText" style="max-width:100%;margin-top:8px"></div>
+   <div class="row" style="margin-top:10px">
+    <button class="btn sm" data-a="fb">Ascolta il commento</button>
+    <button class="btn sm" data-a="mine">Riascolta la tua esposizione</button>
+    <button class="btn sm" data-a="model">Ascolta un esempio migliore</button>
+    <button class="btn sm hi" data-a="dialog">Continua a voce col prof</button>
+   </div>
+   <div class="msg prof" id="eModel" hidden style="max-width:100%;margin-top:10px"></div>
+  </div>
+  <div class="card rec">
+   <h3>Registrati e riascoltati</h3>
+   <p class="hint">Registra con la fotocamera del tablet. Poi guardati: hai usato le sei mosse? Hai detto troppi "cioè"? Ti sei fermato? Dopo, ripeti l'esposizione al prof qui sopra.</p>
+   <div class="row"><label class="btn" for="recIn">Registra un video</label><label class="btn" for="recAud">Registra solo audio</label></div>
+   <input type="file" id="recIn" accept="video/*" capture="user" hidden>
+   <input type="file" id="recAud" accept="audio/*" capture hidden>
+   <div id="recs"></div>
+  </div>
+  <div class="card" id="eHist" hidden><h3>Le tue esposizioni</h3><div id="eHistList"></div></div>
+  <details><summary>Le sei mosse</summary><div><p class="hint">Scrivi per ogni mossa solo una parola chiave: a voce la trasformi in frase.</p><div class="mosse" id="mosse"></div></div></details>
+  <details><summary>Dalla parola chiave alla spiegazione</summary><div><div class="kw" id="kw"></div><div id="kwQ"></div></div></details>
+  <details><summary>I cinque livelli</summary><div><div class="lv" id="lv"></div><div id="lvBox" style="margin-top:14px"></div></div></details>
+  <details><summary>Sono pronto?</summary><div><div class="checks" id="pronto"></div><p class="hint" id="prontoMsg"></p></div></details>
+ </div>
+</section>
+
+<section class="view" id="v-metodo">
+ <header class="board"><div class="in">
+  <h1>Il mio metodo di studio</h1>
+  <p>Comprendere, selezionare, organizzare e spiegare ciò che studio.</p>
+  <div class="path" id="path3"></div>
+ </div></header>
+ <div class="wrap" id="metodo"></div>
+</section>
+
+<nav class="tabs" aria-label="Sezioni">
+ <a href="#prof" data-v="prof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5z"/><path d="M7 11.5V16c0 1.5 2.5 3 5 3s5-1.5 5-3v-4.5M21 9v5"/></svg>Prof</a>
+ <a href="#compiti" data-v="compiti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>Compiti</a>
+ <a href="#libri" data-v="libri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h5v16H4zM9 4h5v16H9z"/><path d="M14.5 5l4.5-1 3 15.5-4.5 1z"/></svg>Libri</a>
+ <a href="#schede" data-v="schede"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Schede</a>
+ <a href="#esponi" data-v="esponi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Esponi</a>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2600)};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const fmtT=x=>Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2,'0');
+const fmt=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^#+\s*/gm,'');
+const parseJSON=t=>{try{const m=String(t).match(/\{[\s\S]*\}/);return m?JSON.parse(m[0]):null}catch(e){return null}};
+const ls={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- contenuti del metodo ---------- */
+const PATH=['Libro + spiegazione','Appunti','Selezione','Riassunto','Schema e parole chiave','Esposizione ad alta voce','Simulazione dell\'interrogazione'];
+const FIELDS=[
+ {k:'idea',t:'1. Idea principale',q:'Di che cosa parla? Dillo in una o due frasi.',h:'Prima guarda titoli, immagini, formule. Leggi un paragrafo alla volta, chiudi il libro e dillo con parole tue.'},
+ {k:'parole',t:'2. Parole chiave',q:'Quali termini devo ricordare? Separali con una virgola.',h:'Non sottolineare tutto: prima capisci, poi seleziona.'},
+ {k:'definizioni',t:'3. Definizioni',q:'Quali concetti devo saper spiegare?',h:'Mantieni definizioni, date, formule e termini specifici.'},
+ {k:'info',t:'4. Informazioni principali',q:'Quali caratteristiche o passaggi?',h:'Seleziona, elimina il secondario, riformula, organizza in ordine logico.'},
+ {k:'cause',t:'5. Cause e conseguenze',q:'Perché? Che cosa produce?',h:'Usa le frecce: → quindi   ← deriva da   ↑ aumenta   ↓ diminuisce'},
+ {k:'esempi',t:'6. Esempi e collegamenti',q:'Che cosa aiuta a capire?',h:'Aggiungi esempi e spiegazioni del professore che completano il libro.'},
+ {k:'riassunto',t:'7. Riassunto',q:'Scrivo un testo breve, ordinato e completo.',h:'Non cercare il riassunto più corto: cerca quello più utile per imparare.'},
+ {k:'orale',t:'8. Esposizione orale',q:'Che cosa dico, con le sei mosse? (scaletta)',h:'Presenta, definisci, descrivi, spiega, fai un esempio, concludi.'},
+ {k:'domande',t:'9. Possibili domande',q:'Che cosa potrebbe chiedermi il professore? Una per riga.',h:'Il prof le userà per interrogarti.'}];
+const CONTROLLO=['Ha un titolo e un ordine logico','Contiene frasi complete','Mantiene definizioni e termini tecnici','Non ripete inutilmente le stesse informazioni','Si capisce anche senza il libro'];
+const MOSSE=[['Presenta','L\'argomento di cui parlo è…'],['Definisci','Si tratta di…'],['Descrivi','Le caratteristiche principali sono…'],['Spiega','Questo avviene perché…'],['Fai un esempio','Un esempio è…'],['Concludi','Questo è importante perché…']];
+const LIVELLI=[['Una frase completa','Spiega un concetto con una frase completa.',0],['Tre frasi','Presenta, descrivi, spiega.',0],['Un minuto senza leggere','Parla per un minuto senza guardare niente.',60],['Due minuti con lo schema','Parla due minuti guardando solo le parole chiave.',120],['Interrogazione simulata','Rispondi a domande non preparate.',0]];
+const PRONTO=['So spiegare l\'argomento senza leggere','Uso frasi complete','So spiegare le definizioni','Descrivo caratteristiche e passaggi principali','So fare esempi o collegamenti, quando pertinenti','Uso il linguaggio specifico della materia','So rispondere alle domande del professore'];
+const KWQ=['Che cos\'è?','Chi o che cosa coinvolge?','Dove e quando?','Come funziona o come avviene?','Perché è importante?'];
+const MODES=[
+ {id:'compiti',t:'Compiti di oggi',h:'Il prof organizza i compiti in blocchi brevi e ti guida.'},
+ {id:'lezione',t:'Fammi lezione',h:'Il prof spiega come in classe. Alza la mano quando vuoi fare una domanda.'},
+ {id:'studio',t:'Studiamo',h:'Il prof ti guida dal paragrafo alla scheda, un passo alla volta.'},
+ {id:'spiega',t:'Spiegami',h:'Il prof spiega a piccoli pezzi e controlla che hai capito.'},
+ {id:'esercizi',t:'Esercizi',h:'Fotografa l\'esercizio: il prof ti aiuta a risolverlo da solo.'},
+ {id:'inglese',t:'English speaking',h:'Conversazione a voce in inglese con correzioni in italiano.'},
+ {id:'interroga',t:'Interrogami',h:'Domande non preparate, come in classe.'},
+ {id:'riassunto',t:'Riassunto',h:'Il prof controlla il tuo riassunto.'}];
+const METODO=`IL METODO DI STUDIO DI ADRIANO (dal suo manuale):
+1 Capitolo: prima di leggere guarda titoli, immagini, formule e chiediti cosa sai già; leggi un paragrafo alla volta, individua idea principale, concetti, definizioni, esempi, collegamenti; chiudi il libro e spiega con parole tue, se non riesci rileggi. Prima capisci, poi seleziona.
+2 Appunti: seleziona, elimina il secondario, riformula con parole tue, organizza, collega con frecce.
+3 A lezione: definizioni, esempi in più, collegamenti, dubbi; dopo rileggi, completa, chiarisci.
+4 Unire libro e appunti in un unico materiale ordinato, senza perdere le aggiunte del professore.
+5 Riassunto: frasi complete con parole tue, ordine logico, termini tecnici, si capisce senza libro.
+6 Schema: argomento e definizione, caratteristiche, cause e conseguenze, funzionamento, esempi, date/formule/vocaboli.
+7 Sei mosse orali: Presenta, Definisci, Descrivi, Spiega, Fai un esempio, Concludi. La parola chiave diventa frase, la frase diventa spiegazione.
+8 Livelli: 1 una frase completa; 2 tre frasi; 3 un minuto senza leggere; 4 due minuti con solo lo schema; 5 interrogazione con domande non preparate. Se si blocca: guarda una parola chiave e riparti.
+9 Pronto se: spiega senza leggere, frasi complete, definizioni, passaggi principali, esempi e collegamenti, linguaggio specifico, risponde alle domande.`;
+const STILE=`COME LAVORA MEGLIO ADRIANO: si concentra meglio con blocchi brevi e obiettivi piccoli e chiari. Quindi: una sola consegna per volta; frasi brevi; quando spieghi, al massimo 3 punti; fai spesso domande che lo tengano attivo; dai un riscontro immediato; celebra i piccoli traguardi; se divaga o si distrae, riportalo al punto con gentilezza e senza rimproveri; dopo circa 15-20 minuti di lavoro, o se sembra stanco, proponi una pausa di 5 minuti; quando si passa al passo successivo dillo chiaramente ("Fatto! Ora passiamo a…").`;
+const MODE_TXT={
+ compiti:'MODALITÀ: Organizziamo i compiti. Usa l\'elenco COMPITI qui sotto. Proponi il piano di oggi in blocchi da 15 minuti con 5 minuti di pausa (massimo 5 blocchi), partendo da ciò che scade prima (verifiche e interrogazioni hanno la precedenza e vanno preparate con qualche giorno di anticipo), alternando materie pesanti e leggere. Presenta il piano come elenco breve, poi chiedi da quale blocco parte. Per ogni compito digli cosa tenere pronto (libro e pagine, quaderno) e di fotografare le pagine o l\'esercizio con la graffetta; poi guidalo con il metodo. Quando finisce un compito, ricordagli di spuntarlo nella sezione Compiti.',
+ lezione:'MODALITÀ: Lezione. Sei in classe e tieni una vera lezione sull\'argomento (quello della scheda o quello che ti chiede; se non è chiaro, chiediglielo). Spiega come un bravo professore dal vivo: parti da qualcosa che conosce o da una domanda curiosa, poi vai avanti in blocchi da 100-150 parole (in questa modalità puoi superare le 90 parole), ognuno con un solo concetto, esempi concreti e collegamenti con quello che ha già studiato. Usa come base, se ci sono, il testo del libro, le pagine allegate e le spiegazioni registrate in classe. Alla fine di ogni blocco fermati e chiedi: "Fin qui ci sei? Domande?", oppure fai una domandina veloce di controllo. Se alza la mano e fa una domanda, rispondi come in classe, anche se è fuori tema rispetto al blocco, poi riprendi il filo ("Torniamo a noi…"). Se dice "vai avanti", passa al blocco successivo. Alla fine fai un riepilogo di 3 punti e proponi di passare a Esponi per ripetere la lezione con parole sue.',
+ studio:'MODALITÀ: Studiamo insieme. Guidalo lungo il percorso del metodo: comprensione del paragrafo, idea principale, parole chiave, definizioni, informazioni principali, cause e conseguenze, esempi, riassunto, esposizione con le sei mosse. Se ci sono pagine allegate, partite da quelle; altrimenti chiedigli di fotografare la pagina col tasto graffetta o di raccontarti il paragrafo. Quando ha prodotto un buon pezzo, digli di copiarlo nella sua scheda.',
+ spiega:'MODALITÀ: Spiegazione. Se non sai quale argomento non gli è chiaro, chiediglielo. Spiega a piccoli pezzi (massimo 80 parole per volta) con un esempio concreto: definizione → caratteristiche → perché → esempio. Dopo ogni pezzo fagli UNA domanda di verifica o chiedigli di ridirlo con parole sue, e correggi la risposta.',
+ esercizi:'MODALITÀ: Esercizi. Se non c\'è un esercizio allegato, chiedigli di fotografarlo. Non dare subito la soluzione: fallo ragionare un passaggio alla volta (dati, che cosa si chiede, regola o formula da usare, calcolo, controllo del risultato). Correggi subito ogni passaggio sbagliato spiegando perché. Dai la soluzione completa solo se l\'ha già tentato davvero, e poi proponigli un esercizio simile da fare da solo.',
+ inglese:'MODALITÀ: English speaking practice, conversazione a voce in inglese. Parla in inglese semplice (livello A2-B1), massimo 50 parole in inglese per turno, chiudi sempre con UNA domanda. Argomento: quello della scheda o dei materiali se c\'è, altrimenti chiedigli di cosa vuole parlare. Se la sua risposta contiene errori (grammatica, lessico, ordine delle parole, tempi verbali), INIZIA con una riga che comincia esattamente con "Correzione:" in italiano: frase corretta e spiegazione in una riga. Poi vai a capo e continua in inglese. Le risposte arrivano dalla dettatura vocale: ignora punteggiatura e maiuscole; se una parola sembra trascritta male, chiedigli se intendeva quella parola e spiegagli come si pronuncia. Alle domande in italiano su grammatica o vocaboli rispondi in italiano con un esempio in inglese.',
+ interroga:'MODALITÀ: Interrogazione simulata (livello 5). Domande non preparate, una alla volta, come un professore vero: apri con "Parlami di…", poi definizioni, cause, esempi, collegamenti. Dopo ogni risposta: riscontro breve (cosa va bene, cosa manca, come dirlo meglio), poi la domanda successiva. Dopo 5 domande, o se scrive "basta", chiudi con un bilancio sui 7 punti di "Sono pronto?" e un giudizio indicativo (non un voto ufficiale) con 2 cose da allenare.',
+ riassunto:'MODALITÀ: Controllo del riassunto. Usa quello della scheda o chiedigli di incollarlo. Valutalo con il Controllo del riassunto: titolo e ordine logico, frasi complete, termini tecnici, niente ripetizioni, si capisce senza libro. Punti forti e al massimo 3 correzioni; fagli riscrivere lui le parti deboli.'};
+
+/* ---------- archivio ---------- */
+const idb=(()=>{let p;const open=()=>p||(p=new Promise((res,rej)=>{const r=indexedDB.open('prof',1);r.onupgradeneeded=()=>r.result.createObjectStore('b');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}));
+ const tx=(m,f)=>open().then(d=>new Promise((res,rej)=>{const t=d.transaction('b',m),q=f(t.objectStore('b'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)}));
+ return{get:k=>tx('readonly',s=>s.get(k)),set:(k,v)=>tx('readwrite',s=>s.put(v,k)),del:k=>tx('readwrite',s=>s.delete(k))}})();
+let schede=ls.get('prof-schede-v1',[]),libri=ls.get('prof-libri-v1',[]),col=null,bcol=null,assets=null,sample=null,imgOK=false,dict=null,tts=null;
+const blobs={};
+const blank=()=>({id:'s'+uid(),materia:'',capitolo:'',titolo:'',idea:'',parole:'',definizioni:'',info:'',cause:'',esempi:'',riassunto:'',orale:'',domande:'',controllo:[],mosse:['','','','','',''],livelli:[],pronto:[],materiali:[],esposizioni:[],bookId:'',updated:Date.now()});
+const get=id=>schede.find(s=>s.id===id);
+const name=s=>s?(s.titolo||'Senza titolo')+(s.materia?' · '+s.materia:''):'';
+const timers={},chains={};
+function save(s,now){s.updated=Date.now();ls.set('prof-schede-v1',schede);if(!col)return;clearTimeout(timers[s.id]);
+ timers[s.id]=setTimeout(()=>{const body=JSON.parse(JSON.stringify(s));chains[s.id]=(chains[s.id]||Promise.resolve()).then(()=>col.doc(s.id).set(body)).catch(()=>{})},now?0:900)}
+function saveBook(b){ls.set('prof-libri-v1',libri);if(bcol)bcol.doc(b.id).set(JSON.parse(JSON.stringify(b))).catch(()=>toast('Libro salvato solo su questo dispositivo'))}
+
+/* immagini e PDF */
+async function toJpeg(src,max=1600){const bmp=await createImageBitmap(src);const k=Math.min(1,max/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return new Promise(r=>c.toBlob(r,'image/jpeg',.82))}
+let pdfLoad=null;
+const loadScript=u=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=u;s.onload=res;s.onerror=rej;document.head.appendChild(s)});
+function pdfjs(){return pdfLoad||(pdfLoad=(async()=>{const B='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';await loadScript(B+'pdf.min.js');await loadScript(B+'pdf.worker.min.js');window.pdfjsLib.GlobalWorkerOptions.workerSrc=B+'pdf.worker.min.js';return window.pdfjsLib})())}
+async function renderPage(doc,i){const pg=await doc.getPage(i);const v1=pg.getViewport({scale:1});const vp=pg.getViewport({scale:Math.min(2.2,1500/v1.width)});const c=document.createElement('canvas');c.width=vp.width;c.height=vp.height;await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;return new Promise(r=>c.toBlob(r,'image/jpeg',.82))}
+async function pdfPages(file,max){const lib=await pdfjs();const doc=await lib.getDocument({data:await file.arrayBuffer()}).promise;const out=[];
+ for(let i=1;i<=Math.min(doc.numPages,max);i++){out.push({blob:await renderPage(doc,i),name:file.name.replace(/\.pdf$/i,'')+' p.'+i})}
+ if(doc.numPages>max)toast(`Ho preso le prime ${max} pagine del PDF`);return out}
+async function filesToImages(files,maxPdf=12){const out=[];for(const f of files){
+ if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){try{out.push(...await pdfPages(f,maxPdf))}catch(e){toast('Non riesco ad aprire il PDF')}}
+ else if(f.type.startsWith('image/')||/\.(jpe?g|png|heic|webp)$/i.test(f.name)){try{out.push({blob:await toJpeg(f),name:f.name.replace(/\.\w+$/,'')})}catch(e){toast('Non riesco ad aprire '+f.name)}}}return out}
+async function storeImg(blob,nm,kind){let id='',src='local';
+ if(assets){try{const r=await assets.upload(new File([blob],(nm||'pagina').replace(/[^\w.-]+/g,'_')+'.jpg',{type:'image/jpeg'}));id=r.id;src='asset'}catch(e){}}
+ if(!id){id='l'+uid();try{await idb.set('m-'+id,blob)}catch(e){}}blobs[id]=blob;return{id,src,name:nm||'',kind:kind||''}}
+async function getBlob(m){if(blobs[m.id])return blobs[m.id];try{const b=m.src==='asset'?await fetch('/_blob/'+encodeURIComponent(m.id)).then(r=>{if(!r.ok)throw 0;return r.blob()}):await idb.get('m-'+m.id);if(b)blobs[m.id]=b;return b||null}catch(e){return null}}
+const urls={};
+async function fillThumbs(root){for(const im of root.querySelectorAll('img[data-mid]')){const m=JSON.parse(im.dataset.m);if(!urls[m.id]){const b=await getBlob(m);if(!b)continue;urls[m.id]=URL.createObjectURL(b)}im.src=urls[m.id]}}
+const thumbHTML=(m,i,del)=>`<button class="thumb" data-view="${i}" aria-label="Apri ${esc(m.name||m.kind)}"><img alt="" data-mid="${esc(m.id)}" data-m="${esc(JSON.stringify(m))}"><span>${esc(m.kind||m.name)}</span>${del?`<span class="x" role="button" data-del="${i}" aria-label="Elimina">×</span>`:''}</button>`;
+function lightbox(m){const d=document.createElement('div');d.className='lightbox';d.innerHTML='<img alt=""><button class="btn hi sm">Chiudi</button>';document.body.appendChild(d);getBlob(m).then(b=>{if(b)d.querySelector('img').src=urls[m.id]||(urls[m.id]=URL.createObjectURL(b))});d.addEventListener('click',()=>d.remove())}
+
+/* AI */
+async function ai(input,o={}){const op={cache:false};if(o.signal)op.signal=o.signal;if(o.onText)op.onText=o.onText;if(o.quick)op.modelTier='quick';if(o.complex)op.modelTier='complex';if(o.images?.length&&imgOK)op.images=o.images.slice(0,8);return sample(input,op)}
+const aiErr=e=>{if(e?.code==='not_granted'){sample=null;$('#noAI').hidden=false;return 'Il prof non è attivo: il servizio non riconosce questo account o non è ancora configurato.'}return e?.code==='rate_limited'?'Facciamo una pausa di un minuto e poi riprendiamo.':'Non sono riuscito a rispondere. Riprova tra poco.'};
+
+/* ---------- percorso ---------- */
+function progress(s){const L=s.livelli||[],has=k=>(s[k]||'').trim().length>2;
+ return [has('titolo')||(s.materiali||[]).length>0,has('parole')||has('definizioni'),has('info')||has('cause'),(s.riassunto||'').trim().length>60,has('parole')&&(s.mosse||[]).some(Boolean),!!(L[2]||L[3]||(s.esposizioni||[]).length),!!(L[4]||(s.pronto||[]).filter(Boolean).length===7)]}
+function drawPath(el,s){const ok=s?progress(s):[];const now=s?ok.indexOf(false):-1;el.innerHTML=PATH.map((p,i)=>`<span class="${ok[i]?'ok':''} ${i===now?'now':''}">${p}</span>`).join('<i>→</i>')}
+
+/* ---------- router ---------- */
+const VIEWS=['prof','compiti','lezione','libri','schede','scheda','esponi','metodo'];let curId=null,step=0;
+function route(){let v=location.hash.slice(1);if(!VIEWS.includes(v))v='prof';if(v==='scheda'&&!get(curId))v='schede';
+ document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));
+ document.querySelectorAll('nav.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.v===(v==='scheda'||v==='metodo'||v==='lezione'?'schede':v)));
+ ({prof:renderProf,compiti:renderCompiti,lezione:renderLezione,libri:renderLibri,schede:renderList,scheda:renderEd,esponi:renderEsponi,metodo:renderMetodo})[v]();window.scrollTo(0,0)}
+addEventListener('hashchange',route);
+const go=v=>{if(location.hash==='#'+v)route();else location.hash=v};
+function opts(sel,val,none){sel.innerHTML=(none?`<option value="">${none}</option>`:'')+[...schede].sort((a,b)=>b.updated-a.updated).map(s=>`<option value="${esc(s.id)}">${esc(name(s))}</option>`).join('');sel.value=val&&get(val)?val:(none?'':schede[0]?.id||'')}
+
+/* ---------- libri ---------- */
+let bImgs=[];
+async function addIndexFiles(files){$('#bStatus').textContent='Preparo le pagine…';bImgs.push(...await filesToImages(files,20));drawBThumbs();$('#bStatus').textContent=''}
+function drawBThumbs(){$('#bThumbs').innerHTML=bImgs.map((x,i)=>`<div class="thumb"><img alt="" src="${URL.createObjectURL(x.blob)}"><span>Pag. ${i+1}</span><button class="x" data-bdel="${i}" aria-label="Togli">×</button></div>`).join('')}
+$('#bThumbs').addEventListener('click',e=>{const i=e.target.dataset.bdel;if(i!=null){bImgs.splice(+i,1);drawBThumbs()}});
+$('#bPhoto').addEventListener('change',e=>{addIndexFiles([...e.target.files]);e.target.value=''});
+$('#bFile').addEventListener('change',e=>{addIndexFiles([...e.target.files]);e.target.value=''});
+function plainIndex(t){const caps=[];t.split('\n').map(x=>x.trim()).filter(Boolean).forEach(l=>{if(/^\d+\.\d+/.test(l)&&caps.length)caps[caps.length-1].paragrafi.push(l);else caps.push({titolo:l,pagina:'',paragrafi:[]})});return caps}
+async function parseIndex(imgs,txt,mat,tit,st){let caps=null;
+ if(sample&&(imgs.length&&imgOK||txt)){st.textContent='Il prof sta leggendo l\'indice…';
+  const pr=`Questo è l'indice di un libro di testo scolastico italiano (${mat||'materia non indicata'}: ${tit}). ${imgs.length?'Le immagini sono le pagine dell\'indice, in ordine.':''} ${txt?'Testo dell\'indice:\n'+txt:''}
+Estrai la struttura completa. Rispondi SOLO con JSON valido, senza commenti: {"capitoli":[{"titolo":"Unità 1 – ...","pagina":"12","paragrafi":["1.1 Titolo (p. 14)","1.2 ..."]}]}
+Mantieni numerazione, titoli e numeri di pagina come scritti. Non inventare nulla; se una parte è illeggibile saltala.`;
+  try{const r=await ai(pr,{images:imgs.map(x=>x.blob),complex:true});caps=parseJSON(r.text)?.capitoli||null}catch(e){st.textContent=aiErr(e)}}
+ if(!caps&&txt)caps=plainIndex(txt);return caps}
+$('#books').addEventListener('change',async e=>{const id=e.target.dataset.bidx;if(!id)return;const files=[...e.target.files];e.target.value='';const b=libri.find(x=>x.id===id);
+ const st=document.getElementById('bst-'+id);st.textContent='Preparo le pagine…';const imgs=await filesToImages(files,20);const caps=await parseIndex(imgs,'',b.materia,b.titolo,st);
+ if(!caps){st.textContent=st.textContent||'Non sono riuscito a leggere l\'indice: prova con foto più nitide.';return}
+ b.capitoli=[...(b.capitoli||[]),...caps].slice(0,120);for(const x of imgs)(b.pagine=b.pagine||[]).push(await storeImg(x.blob,x.name,'Indice'));saveBook(b);toast(`Indice letto: ${caps.length} capitoli`);renderLibri()});
+$('#bSave').addEventListener('click',async()=>{const mat=$('#bMat').value.trim(),tit=$('#bTit').value.trim(),txt=$('#bText').value.trim();
+ if(!tit){toast('Scrivi il titolo del libro');return}if(!bImgs.length&&!txt){toast('Aggiungi le foto dell\'indice o incollalo');return}
+ const btn=$('#bSave');btn.disabled=true;let caps=await parseIndex(bImgs,txt,mat,tit,$('#bStatus'));
+ if(!caps&&txt)caps=plainIndex(txt);
+ if(!caps){btn.disabled=false;if(!$('#bStatus').textContent)$('#bStatus').textContent='Non sono riuscito a leggere l\'indice: prova con foto più nitide o incollalo come testo.';return}
+ const pagine=[];for(const x of bImgs)pagine.push(await storeImg(x.blob,x.name,'Indice'));
+ const b={id:'b'+uid(),materia:mat,titolo:tit,capitoli:caps.slice(0,80),pagine,updated:Date.now()};libri.push(b);saveBook(b);
+ bImgs=[];drawBThumbs();$('#bText').value='';$('#bTit').value='';$('#bStatus').textContent='';btn.disabled=false;toast(`Indice salvato: ${caps.length} capitoli`);renderLibri()});
+function renderLibri(){drawLinks();const L=[...libri].sort((a,b)=>(a.materia||'').localeCompare(b.materia||''));
+ $('#books').innerHTML=L.length?L.map(b=>`<details class="card" style="padding:0"><summary>${esc(b.titolo)} <span class="mute" style="font-family:inherit;font-size:15px;font-weight:400">${esc(b.materia)}${(b.capitoli||[]).length?'':' · indice da caricare'}</span></summary><div>
+ ${b.isbn?`<p class="hint">ISBN ${esc(b.isbn)}</p>`:''}
+ <div class="cap" style="border-top:0"><p class="hint">${(b.capitoli||[]).length?'Mancano delle pagine dell\'indice? Aggiungile:':'Fotografa le pagine dell\'indice (o carica il PDF): il prof saprà dove si trova ogni argomento.'}</p>
+ <div class="row"><label class="btn sm ${(b.capitoli||[]).length?'':'hi'}" for="bi-${esc(b.id)}">${(b.capitoli||[]).length?'Aggiungi pagine dell\'indice':'Carica l\'indice'}</label><input type="file" id="bi-${esc(b.id)}" data-bidx="${esc(b.id)}" accept="image/*,application/pdf" multiple hidden><span class="hint" id="bst-${esc(b.id)}"></span></div></div>
+ ${(b.capitoli||[]).map((c,ci)=>`<div class="cap"><div class="par" style="padding-left:0"><b>${esc(c.titolo)}${c.pagina?` <span class="mute">p. ${esc(c.pagina)}</span>`:''}</b><span class="row" style="flex:none;gap:6px"><button class="btn sm" data-study="${esc(b.id)}|${ci}|-1">Studia</button><button class="btn sm" data-study="${esc(b.id)}|${ci}|-1|lez">Lezione</button></span></div>
+ ${(c.paragrafi||[]).map((p,pi)=>`<div class="par"><span>${esc(p)}</span><span class="row" style="flex:none;gap:6px"><button class="btn sm" data-study="${esc(b.id)}|${ci}|${pi}">Studia</button><button class="btn sm" data-study="${esc(b.id)}|${ci}|${pi}|lez">Lezione</button></span></div>`).join('')}</div>`).join('')}
+ <div class="cap"><b>Pagine dallo Zaino Digitale</b><p class="hint">Nello Zaino scegli <b>Stampa</b> → <b>Salva come PDF</b> con le pagine che ti servono, poi caricale qui. Il prof le userà da solo.</p>
+ ${(b.parts||[]).length?`<p class="hint">Pagine salvate: ${(b.parts||[]).map(x=>esc(x.from+'-'+x.to)+(partIds.includes(x.k)?'':' (su un altro dispositivo)')).join(', ')}</p>`:''}
+ <div class="row"><label class="btn sm hi" for="bpa-${esc(b.id)}">Aggiungi pagine stampate (PDF)</label><input type="file" id="bpa-${esc(b.id)}" data-bpart="${esc(b.id)}" accept="application/pdf" hidden><label class="hint" for="bpf-${esc(b.id)}">Prima pagina</label><input type="text" inputmode="numeric" id="bpf-${esc(b.id)}" placeholder="auto" style="width:80px;padding:6px"></div>
+ <span class="hint" id="bps-${esc(b.id)}"></span></div>
+ <div class="cap"><b>Libro completo</b><p class="hint">${hasPdf(b.id)?`Salvato su questo dispositivo (${b.pdfPages||'?'} pagine): il prof legge da solo le pagine di ogni argomento.`:'Carica una volta il PDF completo del libro: resta sul tablet e il prof leggerà le pagine giuste da solo, senza foto.'}</p>
+ <div class="row"><label class="btn sm" for="bp-${esc(b.id)}">${hasPdf(b.id)?'Sostituisci PDF':'Carica il PDF del libro'}</label><input type="file" id="bp-${esc(b.id)}" data-bpdf="${esc(b.id)}" accept="application/pdf" hidden></div>
+ ${hasPdf(b.id)?`<label class="hint" style="display:block;margin-top:8px">Nel PDF, la pagina stampata 10 è la pagina numero <input type="text" inputmode="numeric" data-boff="${esc(b.id)}" value="${10+(+b.offset||0)}" style="width:80px;display:inline-block;padding:6px"></label>`:''}</div>
+ <div class="row" style="margin-top:10px"><button class="btn sm red" data-bdelete="${esc(b.id)}">Elimina libro</button></div></div></details>`).join(''):'<p class="mute">Nessun libro ancora. Basta l\'indice: il prof saprà dove si trova ogni argomento.</p>'}
+$('#books').addEventListener('click',e=>{const s=e.target.closest('[data-study]'),d=e.target.closest('[data-bdelete]');
+ if(d){if(d.dataset.c!=='1'){d.dataset.c='1';d.textContent='Tocca ancora per eliminare';return}libri=libri.filter(b=>b.id!==d.dataset.bdelete);ls.set('prof-libri-v1',libri);if(bcol)bcol.doc(d.dataset.bdelete).delete().catch(()=>{});renderLibri();return}
+ if(!s)return;const [bid,ci,pi,lz]=s.dataset.study.split('|');const b=libri.find(x=>x.id===bid),c=b.capitoli[+ci],p=+pi>=0?c.paragrafi[+pi]:'';
+ const tit=p||c.titolo;let sc=schede.find(x=>x.bookId===bid&&x.titolo===tit);
+ if(!sc){sc=blank();Object.assign(sc,{materia:b.materia,titolo:tit,capitolo:(p?c.titolo:'')+(c.pagina?' (da p. '+c.pagina+')':''),bookId:bid,pagine:pagesFromIndex(c,+pi)});schede.push(sc);save(sc,true)}
+ openProf(sc,lz?'lezione':'studio',lz?`Fammi lezione su "${tit}" (libro ${b.titolo}${sc.pagine?', pagine '+sc.pagine:''}).`:`Oggi studio "${tit}" dal libro ${b.titolo}${sc.pagine?' (pagine '+sc.pagine+')':c.pagina?' (capitolo che inizia a pagina '+c.pagina+')':''}. Da dove partiamo?`)});
+function booksTxt(s){if(!libri.length)return 'Nessun indice di libro caricato.';
+ const rel=s?.bookId?libri.filter(b=>b.id===s.bookId):s?.materia?libri.filter(b=>matKey(b.materia)===matKey(s.materia)):libri;
+ const list=(rel.length?rel:libri);let t='INDICI DEI LIBRI DI ADRIANO (usali per trovare argomenti e pagine; non inventare pagine che non ci sono):\n';
+ for(const b of list){t+=`\n# ${b.titolo} (${b.materia})\n`+(b.capitoli||[]).map(c=>`- ${c.titolo}${c.pagina?' p.'+c.pagina:''}${rel.length===1&&c.paragrafi?.length?': '+c.paragrafi.join('; '):''}`).join('\n')}
+ if(!rel.length||rel.length<libri.length)t+='\nAltri libri: '+libri.filter(b=>!list.includes(b)).map(b=>b.titolo+' ('+b.materia+')').join(', ');
+ return t.slice(0,9000)}
+
+/* libro completo sul dispositivo */
+let pdfIds=ls.get('prof-bookpdf',[]);const hasPdf=id=>pdfIds.includes(id);const docs={},bpCache={};
+async function bookDoc(id){if(docs[id])return docs[id];const blob=await idb.get('book-'+id);if(!blob)return null;const lib=await pdfjs();docs[id]=await lib.getDocument({data:await blob.arrayBuffer()}).promise;return docs[id]}
+function range(str){const m=String(str||'').match(/(\d{1,4})\s*(?:[-–—]|a|al)\s*(\d{1,4})/);if(m){const a=+m[1],z=+m[2];return z>=a?[a,Math.min(z,a+7)]:[a,a]}const o=String(str||'').match(/(\d{1,4})/);return o?[+o[1],+o[1]+3]:null}
+let partIds=ls.get('prof-bookparts',[]);const hasPart=b=>(b.parts||[]).some(x=>partIds.includes(x.k));
+async function partDoc(k){if(docs[k])return docs[k];const blob=await idb.get(k);if(!blob)return null;const lib=await pdfjs();docs[k]=await lib.getDocument({data:await blob.arrayBuffer()}).promise;return docs[k]}
+async function pageRef(b,p){if(hasPdf(b.id)){const d=await bookDoc(b.id);const i=p+(+b.offset||0);return d&&i>=1&&i<=d.numPages?{d,i}:null}
+ for(const x of (b.parts||[]))if(p>=x.from&&p<=x.to&&partIds.includes(x.k)){const d=await partDoc(x.k);if(d)return {d,i:p-x.from+1}}return null}
+async function bookPages(sc){if(!sc?.bookId||!sc.pagine)return null;{const b0=libri.find(x=>x.id===sc.bookId);if(!b0||!(hasPdf(b0.id)||hasPart(b0)))return null}const key=sc.bookId+'|'+sc.pagine;if(bpCache[key])return bpCache[key];
+ const b=libri.find(x=>x.id===sc.bookId);const r=range(sc.pagine);if(!b||!r)return null;
+ const out={txt:'',imgs:[]};for(let p=r[0];p<=r[1];p++){let ref=null;try{ref=await pageRef(b,p)}catch(e){}if(!ref)continue;const doc=ref.d,i=ref.i;
+  try{const pg=await doc.getPage(i);const tc=await pg.getTextContent();const t=tc.items.map(x=>x.str+(x.hasEOL?'\n':' ')).join('').replace(/[ \t]+/g,' ').trim();
+   if(t.length>150)out.txt+=`\n--- Pagina ${p} ---\n${t.slice(0,6000)}`;if(t.length<=150||/fig|grafic|tabell|carta|mappa/i.test(t)&&out.imgs.length<3)out.imgs.push(await renderPage(doc,i))}catch(e){}}
+ out.txt=out.txt?`TESTO DEL LIBRO "${b.titolo}", PAGINE ${r[0]}-${r[1]} (è il materiale da studiare: basati su questo):${out.txt}`.slice(0,30000):'';bpCache[key]=out;return out}
+function pagesFromIndex(c,pi){const pg=t=>{const m=String(t||'').match(/p(?:ag)?\.?\s*(\d{1,4})|\((\d{1,4})\)|\s(\d{1,4})\s*$/i);return m?+(m[1]||m[2]||m[3]):null};
+ if(pi<0){const a=pg(c.pagina)||+c.pagina||null;const b=c.paragrafi?.length?pg(c.paragrafi[0]):null;return a?`${a}-${b&&b>a?b-1:a+3}`:''}
+ const a=pg(c.paragrafi[pi]);if(!a)return '';const nx=pg(c.paragrafi[pi+1]);return `${a}-${nx&&nx>a?Math.min(nx,a+7)-(nx<=a+7?1:0):a+3}`}
+$('#books').addEventListener('change',async e=>{const pid=e.target.dataset.bpart;if(!pid)return;const f=e.target.files[0];e.target.value='';if(!f)return;const b=libri.find(x=>x.id===pid);
+ const st=document.getElementById('bps-'+pid);st.textContent='Leggo le pagine…';const k='bpart-'+uid();
+ try{await idb.set(k,f);const d=await partDoc(k);let from=parseInt(document.getElementById('bpf-'+pid).value,10);
+  if(isNaN(from)){for(let i=1;i<=Math.min(3,d.numPages)&&isNaN(from);i++){const tc=await (await d.getPage(i)).getTextContent();const nums=tc.items.map(x=>x.str.trim()).filter(t=>/^\d{1,4}$/.test(t)).map(Number).filter(n=>n>0&&n<2000);if(nums.length)from=nums[nums.length-1]-(i-1)}}
+  if(isNaN(from)){await idb.del(k);delete docs[k];st.textContent='Non riesco a capire da che pagina inizia: scrivila nel riquadro "Prima pagina" e ricarica il PDF.';return}
+  const part={k,from,to:from+d.numPages-1,added:Date.now()};b.parts=[...(b.parts||[]).filter(x=>!(x.from===part.from&&x.to===part.to)),part].sort((x,y)=>x.from-y.from);partIds.push(k);ls.set('prof-bookparts',partIds);saveBook(b);
+  Object.keys(bpCache).forEach(x=>delete bpCache[x]);toast(`Salvate le pagine ${part.from}-${part.to}`);renderLibri()}
+ catch(er){st.textContent='Non riesco ad aprire il PDF: forse è protetto. Prova con "Salva come PDF" dal menu Stampa.'}});
+$('#books').addEventListener('change',async e=>{const id=e.target.dataset.bpdf,off=e.target.dataset.boff;
+ if(off){const b=libri.find(x=>x.id===off);const v=parseInt(e.target.value,10);if(!isNaN(v)){b.offset=v-10;saveBook(b);Object.keys(bpCache).forEach(k=>delete bpCache[k]);toast('Numerazione salvata')}return}
+ if(!id)return;const f=e.target.files[0];e.target.value='';if(!f)return;const b=libri.find(x=>x.id===id);toast('Salvo il libro sul tablet…');
+ try{await idb.set('book-'+id,f);delete docs[id];const doc=await bookDoc(id);b.pdfPages=doc.numPages;if(!hasPdf(id)){pdfIds.push(id);ls.set('prof-bookpdf',pdfIds)}saveBook(b);toast(`Libro salvato: ${doc.numPages} pagine`);renderLibri()}
+ catch(er){toast('Non riesco a salvare il PDF: spazio pieno o file protetto')}});
+
+/* collegamenti rapidi a Zaino Digitale e Axios */
+const LINKS=[['zaino','Zaino Digitale','i libri digitali'],['axios','Registro Axios','i compiti']];
+function drawLinks(){const L=ls.get('prof-links',{});document.querySelectorAll('[data-links]').forEach(el=>{
+ el.innerHTML='<h3>Apri</h3><p class="hint">Si apre fuori da PROF, con il tuo accesso. Fai lo screenshot di quello che serve e torna qui.</p><div class="row">'+LINKS.map(([k,n])=>L[k]?`<a class="btn" href="${esc(L[k])}" target="_blank" rel="noopener">${n}</a>`:'').join('')+'</div>'+
+ '<details style="margin-top:10px"><summary style="font-size:17px">Imposta i collegamenti</summary><div>'+LINKS.map(([k,n,w])=>`<label class="f">Indirizzo della pagina di accesso di ${n} (${w})</label><input type="text" inputmode="url" data-lk="${k}" value="${esc(L[k]||'')}" placeholder="https://…">`).join('')+'<p class="hint">Copia l\'indirizzo dalla barra del browser quando sei sulla pagina di accesso. Le password restano sui siti, PROF non le conosce.</p></div></details>'})}
+document.addEventListener('change',e=>{const k=e.target.dataset?.lk;if(!k)return;const v=e.target.value.trim();const L=ls.get('prof-links',{});if(v&&!/^https:\/\//i.test(v)){toast('L\'indirizzo deve iniziare con https://');return}L[k]=v;ls.set('prof-links',L);drawLinks();toast('Collegamento salvato')});
+
+/* ---------- compiti ---------- */
+let compiti=ls.get('prof-compiti-v1',[]),ccol=null;
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const dayDiff=d=>d?Math.round((new Date(d+'T12:00')-new Date(today()+'T12:00'))/864e5):99;
+const dueLbl=d=>{if(!d)return ['senza data',''];const n=dayDiff(d);const w=new Date(d+'T12:00').toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});return n<0?['scaduto · '+w,'today']:n===0?['oggi','today']:n===1?['per domani','today']:n<=3?['per '+w,'soon']:['per '+w,'']};
+let cChain=Promise.resolve();
+function saveCompiti(){ls.set('prof-compiti-v1',compiti);if(ccol){const body={kind:'compiti',items:JSON.parse(JSON.stringify(compiti.slice(-150)))};cChain=cChain.then(()=>ccol.set(body)).catch(()=>{})}}
+function compitiTxt(){const L=compiti.filter(c=>!c.done&&dayDiff(c.consegna)>=-1).sort((a,b)=>(a.consegna||'9').localeCompare(b.consegna||'9')).slice(0,25);
+ const d=new Date();return `OGGI È ${d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.\nCOMPITI DA FARE (dal registro):\n`+(L.length?L.map(c=>`- [${c.consegna||'senza data'}] ${c.materia}: ${c.testo}${c.tipo?' ('+c.tipo+')':''}`).join('\n'):'nessun compito caricato')}
+async function readCompiti(files){const st=$('#cStatus');if(!sample){$('#noAI').hidden=false;st.textContent='Il prof non è attivo: puoi aggiungere i compiti a mano qui sotto.';return}
+ if(!imgOK){st.textContent='Il prof non può leggere le immagini qui: aggiungi i compiti a mano.';return}
+ st.textContent='Preparo le immagini…';const imgs=await filesToImages(files,6);if(!imgs.length){st.textContent='';return}st.textContent='Il prof sta leggendo i compiti…';
+ const pr=`Queste immagini sono screenshot o foto dei compiti assegnati, presi dal registro elettronico Axios di uno studente di prima liceo scientifico. Oggi è ${today()} (${new Date().toLocaleDateString('it-IT',{weekday:'long'})}).
+Estrai OGNI compito. Rispondi SOLO con JSON valido: {"compiti":[{"materia":"Storia","consegna":"YYYY-MM-DD","testo":"descrizione completa come scritta, con pagine ed esercizi","tipo":"studio|esercizi|verifica|interrogazione|lettura|altro","argomento":"argomento breve se si capisce, altrimenti vuoto","pagine":"es. 34-38 o vuoto"}]}
+Regole: la data di consegna è quella per cui il compito va fatto (se c'è solo la data di assegnazione o un giorno della settimana, ricava la data futura più vicina; se non si capisce lascia ""). Non inventare compiti né pagine. Se un compito contiene più parti della stessa materia tienile insieme.
+${libri.length?'Libri dello studente: '+libri.map(b=>b.titolo+' ('+b.materia+')').join(', '):''}`;
+ try{const r=await ai(pr,{images:imgs.map(x=>x.blob),complex:true});const j=parseJSON(r.text);const L=j?.compiti||[];let n=0;
+  for(const c of L){if(!c.testo)continue;const key=(c.materia+'|'+c.consegna+'|'+c.testo).toLowerCase().replace(/\s+/g,' ');
+   if(compiti.some(x=>(x.materia+'|'+x.consegna+'|'+x.testo).toLowerCase().replace(/\s+/g,' ')===key))continue;
+   compiti.push({id:'c'+uid(),materia:String(c.materia||''),consegna:/^\d{4}-\d{2}-\d{2}$/.test(c.consegna)?c.consegna:'',testo:String(c.testo),tipo:String(c.tipo||''),argomento:String(c.argomento||''),pagine:String(c.pagine||''),done:false,schedaId:'',added:Date.now()});n++}
+  saveCompiti();if(n)setTimeout(()=>$('#cList').scrollIntoView({behavior:'smooth'}),100);st.textContent=n?`Ho trovato ${n} compiti nuovi. Scegli da quale materia iniziare.`:L.length?'Questi compiti c\'erano già.':'Non ho trovato compiti: prova con uno screenshot più nitido.';renderCompiti()}
+ catch(e){st.textContent=aiErr(e)}}
+$('#cShot').addEventListener('change',e=>{readCompiti([...e.target.files]);e.target.value=''});
+$('#cCam').addEventListener('change',e=>{readCompiti([...e.target.files]);e.target.value=''});
+$('#cAdd').addEventListener('click',()=>{const t=$('#cTxt').value.trim();if(!t){toast('Scrivi che cosa c\'è da fare');return}
+ compiti.push({id:'c'+uid(),materia:$('#cMat').value.trim(),consegna:$('#cDate').value||'',testo:t,tipo:/es\.|eserciz/i.test(t)?'esercizi':/verific/i.test(t)?'verifica':/interrog/i.test(t)?'interrogazione':'studio',argomento:'',pagine:'',done:false,schedaId:'',added:Date.now()});
+ saveCompiti();$('#cTxt').value='';toast('Compito aggiunto');renderCompiti()});
+function renderCompiti(){drawLinks();const open=compiti.filter(c=>!c.done).sort((a,b)=>(a.consegna||'9').localeCompare(b.consegna||'9'));const done=compiti.filter(c=>c.done&&dayDiff(c.consegna)>=-7).slice(-10);
+ const n1=open.filter(c=>dayDiff(c.consegna)<=1).length;$('#cSub').textContent=open.length?`${open.length} compiti da fare${n1?`, ${n1} per domani`:''}. Uno alla volta: tocca Inizia.`:'Fai lo screenshot dei compiti dal registro Axios e caricalo qui: il prof li organizza e ti prepara a studiare.';
+ const row=c=>{const [l,k]=dueLbl(c.consegna);return `<div class="cmp ${c.done?'done':''}"><input type="checkbox" data-cdone="${esc(c.id)}" ${c.done?'checked':''} aria-label="Fatto"><div><div class="row" style="justify-content:space-between"><b>${esc(c.materia||'Materia?')}</b><span class="due ${k}">${esc(l)}</span></div><div class="tx">${esc(c.testo)}</div>${c.tipo&&c.tipo!=='studio'?`<span class="hint">${esc(c.tipo)}</span>`:''}
+ ${c.done?'':`<div class="row" style="margin-top:6px"><button class="btn sm full" data-cgo="${esc(c.id)}">Inizia</button>${/verific|interrog/.test(c.tipo)?`<button class="btn sm" data-cexp="${esc(c.id)}">Esponi</button>`:''}<button class="btn sm red" data-cdel="${esc(c.id)}">Togli</button></div>`}</div></div>`};
+ $('#cList').innerHTML=chooserHTML()+(open.length?`<div class="card"><h3>Tutti i compiti</h3>${open.map(row).join('')}</div>`:'<div class="card"><h3>Nessun compito in sospeso</h3><p class="mute">Carica lo screenshot dei compiti di Axios per iniziare.</p></div>')+(done.length?`<details><summary>Fatti</summary><div>${done.map(row).join('')}</div></details>`:'')}
+function schedaFor(c){let sc=c.schedaId&&get(c.schedaId);if(sc)return sc;const tit=c.argomento||c.testo.slice(0,60);
+ sc=schede.find(x=>x.titolo===tit&&x.materia===c.materia);if(!sc){sc=blank();const bk=libri.find(b=>matKey(b.materia)===matKey(c.materia));Object.assign(sc,{materia:c.materia,titolo:tit,capitolo:c.pagine?'pag. '+c.pagine:'',bookId:bk?.id||'',pagine:c.pagine||''});schede.push(sc);save(sc,true)}
+ c.schedaId=sc.id;saveCompiti();return sc}
+$('#cList').addEventListener('change',e=>{const id=e.target.dataset.cdone;if(!id)return;const c=compiti.find(x=>x.id===id);c.done=e.target.checked;saveCompiti();if(c.done)toast('Fatto! Un compito in meno.');renderCompiti()});
+$('#cList').addEventListener('click',e=>{const g=e.target.closest('[data-cgo]'),x=e.target.closest('[data-cexp]'),d=e.target.closest('[data-cdel]');
+ if(d){if(d.dataset.c!=='1'){d.dataset.c='1';d.textContent='Sicuro?';return}compiti=compiti.filter(c=>c.id!==d.dataset.cdel);saveCompiti();renderCompiti();return}
+ if(x){const c=compiti.find(k=>k.id===x.dataset.cexp);eId=schedaFor(c).id;go('esponi');return}
+ if(!g)return;const c=compiti.find(k=>k.id===g.dataset.cgo);const sc=schedaFor(c);
+ const md=c.tipo==='esercizi'?'esercizi':/verific|interrog/.test(c.tipo)?'studio':(c.materia||'').toLowerCase().startsWith('ingl')&&/speak|convers|oral/i.test(c.testo)?'inglese':'studio';
+ openProf(sc,md,`Devo fare questo compito di ${c.materia||'?'}${c.consegna?' per '+dueLbl(c.consegna)[0]:''}: "${c.testo}"${c.tipo&&c.tipo!=='studio'?' ('+c.tipo+')':''}. Aiutami a partire.`)});
+$('#cPlan').addEventListener('click',()=>openProf(null,'compiti','Organizziamo i compiti di oggi.'));
+
+/* ---------- scelta della materia dai compiti ---------- */
+function matGroups(){const open=compiti.filter(c=>!c.done);const g={};for(const c of open){const k=matKey(c.materia);(g[k]=g[k]||[]).push(c)}
+ return Object.entries(g).map(([k,L])=>({k,L:L.sort((a,b)=>(a.consegna||'9').localeCompare(b.consegna||'9'))})).sort((a,b)=>(a.L[0].consegna||'9').localeCompare(b.L[0].consegna||'9'))}
+function chooserHTML(excl,title){const G=matGroups().filter(x=>x.k!==excl);if(!G.length)return '';
+ return `<div class="card"><h3>${title||'Da quale materia vuoi iniziare?'}</h3><p class="hint">Scegli tu: il prof apre la materia e parte dai compiti.</p><div class="list" style="margin-top:8px">${G.map(x=>{const [l,cl]=dueLbl(x.L[0].consegna);return `<button class="item" data-startmat="${esc(x.k)}"><span><b>${esc(matName(x.k))}</b><span class="mute">${x.L.length} ${x.L.length===1?'compito':'compiti'}</span></span><span class="due ${cl}">${esc(l)}</span></button>`}).join('')}</div></div>`}
+function startMateria(k){const L=matGroups().find(x=>x.k===k)?.L||[];if(!L.length){openProf(null,null,'',null,k);return}
+ const c=L[0],sc=schedaFor(c);const md=c.tipo==='esercizi'?'esercizi':(k==='inglese'&&/speak|convers|oral/i.test(c.testo))?'inglese':'studio';
+ const list=L.map((x,i)=>`${i+1}) ${x.testo}${x.consegna?' ('+dueLbl(x.consegna)[0]+')':''}`).join('\n');
+ openProf(sc,md,`Oggi per ${matName(k)} devo fare:\n${list}\nPartiamo dal primo.`,null,k)}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-startmat]');if(b)startMateria(b.dataset.startmat)});
+function drawMatComp(){const el=$('#matComp');if(!el)return;const L=compiti.filter(c=>!c.done&&matKey(c.materia)===mat);
+ if(!L.length){const nx=chooserHTML(mat,compiti.some(c=>c.done&&matKey(c.materia)===mat&&dayDiff(c.consegna)>=0)?'Finito qui! Prossima materia?':'Altre materie con compiti');el.innerHTML=nx;return}
+ el.innerHTML=`<div class="checks" style="margin-top:6px"><b>Compiti di ${esc(matName(mat))}</b>${L.map(c=>`<label><input type="checkbox" data-mcdone="${esc(c.id)}"><span>${esc(c.testo)} <span class="due ${dueLbl(c.consegna)[1]}">${esc(dueLbl(c.consegna)[0])}</span></span></label>`).join('')}</div>`}
+document.addEventListener('change',e=>{const id=e.target.dataset?.mcdone;if(!id)return;const c=compiti.find(x=>x.id===id);if(!c)return;c.done=true;saveCompiti();
+ const left=compiti.filter(x=>!x.done&&matKey(x.materia)===mat).length;toast(left?'Fatto! Ne resta '+left:'Bravo! '+matName(mat)+' finita.');if(!left)note(matName(mat)+': compiti finiti');drawMatComp()});
+
+/* ---------- lezioni registrate ---------- */
+let lezioni=ls.get('prof-lezioni-v1',[]),lOn=false,lStart=0,lSec=0,lClk=null,lImgs=[];
+function saveLez(l){ls.set('prof-lezioni-v1',lezioni);if(col)col.doc('lez-'+l.id).set(JSON.parse(JSON.stringify(l))).catch(()=>{})}
+$('#lRecOn').checked=!!ls.get('prof-rec-on',false);$('#lRecOn').addEventListener('change',e=>{ls.set('prof-rec-on',e.target.checked);if(!e.target.checked&&lOn){dict?.stop().catch(()=>{});lStop()}renderLezione()});
+function renderLezione(){$('#lRec').hidden=!$('#lRecOn').checked;$('#lHint').textContent=dict?'Appoggia il tablet vicino al professore e tocca il pulsante. PROF ascolta e trascrive (al massimo 60 minuti per volta).':'Il microfono di PROF funziona aprendo l\'app con Chrome. Qui puoi dettare con il microfono della tastiera, scrivere o incollare appunti, e aggiungere foto della lavagna o del quaderno.';
+ $('#lGo').hidden=!dict;drawLThumbs();renderLezList()}
+function drawLThumbs(){$('#lThumbs').innerHTML=lImgs.map((x,i)=>`<div class="thumb"><img alt="" src="${URL.createObjectURL(x.blob)}"><span>Foto ${i+1}</span><button class="x" data-ldel="${i}" aria-label="Togli">×</button></div>`).join('')}
+$('#lThumbs').addEventListener('click',e=>{const i=e.target.dataset.ldel;if(i!=null){lImgs.splice(+i,1);drawLThumbs()}});
+$('#lImg').addEventListener('change',async e=>{const f=[...e.target.files];e.target.value='';lImgs.push(...await filesToImages(f,6));drawLThumbs()});
+function lTick(){lSec=(Date.now()-lStart)/1000;$('#lClock').textContent=fmtT(lSec)}
+function lStop(){lOn=false;clearInterval(lClk);$('#lGo').textContent=lSec?'Continua ad ascoltare':'Inizia ad ascoltare la lezione';$('#lGo').classList.remove('live')}
+$('#lGo').addEventListener('click',()=>{if(lOn){if(dict?.active())dict.stop().catch(()=>{});lStop();return}
+ if(!dictStart('lez'))return;lOn=true;lStart=Date.now()-lSec*1000;clearInterval(lClk);lClk=setInterval(lTick,500);$('#lGo').textContent='Pausa';$('#lGo').classList.add('live')});
+$('#lClean').addEventListener('click',async()=>{const raw=$('#lRaw').value.trim(),m=$('#lMat').value.trim(),a=$('#lArg').value.trim();
+ if(!m){toast('Scrivi la materia');return}if(raw.length<20&&!lImgs.length){toast('Scrivi gli appunti o aggiungi una foto');return}
+ if(!sample){$('#noAI').hidden=false;$('#lStatus').textContent='Il prof non è attivo.';return}
+ if(dict?.active()){try{await dict.stop()}catch(e){}}lStop();const btn=$('#lClean');btn.disabled=true;const st=$('#lStatus');st.textContent='Il prof sta riordinando gli appunti…';
+ const rec=lSec>0;const pr=`${rec?`Questa è la trascrizione automatica, fatta dal microfono di un tablet in classe, di una lezione di ${m}${a?' su "'+a+'"':''} in una prima liceo scientifico${lImgs.length?', insieme a foto della lavagna o degli appunti':''}. La trascrizione contiene errori, rumori, chiacchiere dei compagni, appello, interruzioni, battute e parti che non c'entrano.`:`Questi sono gli appunti presi da Adriano durante una lezione di ${m}${a?' su "'+a+'"':''} in una prima liceo scientifico${lImgs.length?' (anche in foto: quaderno o lavagna)':''}. Possono essere disordinati, abbreviati o incompleti.`}
+Tieni SOLO la spiegazione del professore e trasformala in appunti di studio chiari per Adriano, che studia meglio con testi ordinati e brevi.
+Testo semplice, **grassetto** per i termini chiave, righe che iniziano con "- " per gli elenchi. Usa queste sezioni (salta quelle vuote):
+**Titolo:**
+**Idea principale:** 1-2 frasi
+**La spiegazione:** paragrafi brevi in ordine logico
+**Definizioni:**
+**Esempi fatti in classe:**
+**Cosa il professore ha detto che è importante:** (frasi come "questo lo chiedo", "attenzione a…")
+**Indicazioni del professore:** compiti, pagine del libro, date di verifiche o interrogazioni
+**Punti poco chiari:** parti incomprensibili da chiedere al professore o ai compagni
+Regole: non inventare niente che non sia nella lezione; correggi una parola trascritta male solo se è evidente cosa intendeva il professore; usa le foto per completare. Rispondi solo con gli appunti.
+${raw?(rec?'Trascrizione':'Appunti')+':\n"""'+raw.slice(0,60000)+'"""':''}`;
+ try{const r=await ai(pr,{images:lImgs.map(x=>x.blob),complex:true,onText:({text})=>{st.textContent='Sto scrivendo gli appunti… '+Math.round(text.length/10)+'%'}});
+  let sc=a?schede.find(x=>matKey(x.materia)===matKey(m)&&(x.titolo||'').toLowerCase()===a.toLowerCase()):null;
+  if(a&&!sc){sc=blank();Object.assign(sc,{materia:m,titolo:a});schede.push(sc);save(sc,true)}
+  const imgs=[];for(const x of lImgs)imgs.push(await storeImg(x.blob,x.name,'Lavagna/appunti'));
+  if(sc&&imgs.length){sc.materiali=[...(sc.materiali||[]),...imgs];save(sc,true)}
+  const l={id:'l'+uid(),materia:m,argomento:a,date:Date.now(),durata:Math.round(lSec),raw:raw.slice(0,60000),appunti:r.text.trim(),schedaId:sc?.id||'',imgs};lezioni.unshift(l);saveLez(l);
+  $('#lRaw').value='';lImgs=[];lSec=0;$('#lClock').textContent='0:00';$('#lArg').value='';st.textContent='Appunti pronti!';renderLezione()}
+ catch(e){st.textContent=aiErr(e)}btn.disabled=false});
+function renderLezList(){const L=lezioni.slice(0,40);$('#lList').innerHTML=L.length?`<div class="card"><h3>Lezioni salvate</h3>${L.map(l=>`<details><summary style="font-size:18px">${esc(l.argomento||l.materia)} <span class="mute" style="font-family:inherit;font-size:14px;font-weight:400">${esc(l.materia)} · ${new Date(l.date).toLocaleDateString('it-IT',{day:'numeric',month:'short'})}${l.durata?' · '+fmtT(l.durata):''}</span></summary><div>
+ <div class="msg prof" style="max-width:100%">${fmt(l.appunti)}</div>
+ <div class="row" style="margin-top:10px"><button class="btn sm full" data-lstudy="${esc(l.id)}">Ripassala col prof</button><button class="btn sm" data-llez="${esc(l.id)}">Rispiegamela</button><button class="btn sm" data-lsay="${esc(l.id)}">Ascolta gli appunti</button><button class="btn sm red" data-ldelz="${esc(l.id)}">Elimina</button></div>
+ ${l.raw?`<details style="margin-top:8px"><summary style="font-size:15px">Trascrizione originale</summary><div><p class="hint" style="white-space:pre-wrap">${esc(l.raw.slice(0,20000))}</p></div></details>`:''}</div></details>`).join('')}</div>`:'<p class="mute">Nessuna lezione ancora.</p>'}
+$('#lList').addEventListener('click',e=>{const z=e.target.closest('[data-llez]');if(z){const l=lezioni.find(x=>x.id===z.dataset.llez);openProf(get(l.schedaId)||null,'lezione',`Rispiegami la lezione di ${l.materia}${l.argomento?' su '+l.argomento:''} come in classe.`,null,matKey(l.materia));return}
+ const s=e.target.closest('[data-lstudy]'),y=e.target.closest('[data-lsay]'),d=e.target.closest('[data-ldelz]');
+ if(y){const l=lezioni.find(x=>x.id===y.dataset.lsay);speakOut(l.appunti.slice(0,1900),'it');return}
+ if(d){if(d.dataset.c!=='1'){d.dataset.c='1';d.textContent='Sicuro?';return}lezioni=lezioni.filter(x=>x.id!==d.dataset.ldelz);ls.set('prof-lezioni-v1',lezioni);if(col)col.doc('lez-'+d.dataset.ldelz).delete().catch(()=>{});renderLezList();return}
+ if(s){const l=lezioni.find(x=>x.id===s.dataset.lstudy);openProf(get(l.schedaId)||null,'studio',`Ho registrato la spiegazione di ${l.materia}${l.argomento?' su '+l.argomento:''} del ${new Date(l.date).toLocaleDateString('it-IT',{day:'numeric',month:'long'})}. Ripassiamola insieme.`,null,matKey(l.materia))}});
+function lezTxt(){const L=lezioni.filter(l=>(pId&&l.schedaId===pId)||matKey(l.materia)===mat).slice(0,3);if(!L.length)return '';
+ return 'SPIEGAZIONI DEL PROFESSORE IN CLASSE (appunti dalle lezioni registrate; sono la base di quello che gli chiederanno):\n'+L.map(l=>`# ${l.argomento||l.materia} (${new Date(l.date).toLocaleDateString('it-IT')})\n${l.appunti}`).join('\n\n').slice(0,9000)}
+
+/* ---------- schede ---------- */
+function renderList(){const L=[...schede].sort((a,b)=>b.updated-a.updated);
+ $('#list').innerHTML=L.length?L.map(s=>{const n=progress(s).filter(Boolean).length;
+  return `<button class="item" data-id="${esc(s.id)}"><span><b>${esc(s.titolo||'Senza titolo')}</b><span class="mute">${esc([s.materia,s.capitolo].filter(Boolean).join(' · ')||'Da completare')}</span></span><span class="meter" title="${n} di 7 tappe"><i style="width:${n/7*100}%"></i></span></button>`}).join('')
+  :'<div class="card"><h3>Nessuna scheda ancora</h3><p class="mute">Scegli un argomento dai tuoi libri, oppure crea una scheda vuota.</p></div>';
+ $('#saveWhere').textContent=col?'Le schede sono salvate nell\'account di PROF e si vedono su tutti i dispositivi.':'Le schede sono salvate su questo dispositivo.'}
+$('#list').addEventListener('click',e=>{const b=e.target.closest('.item');if(b){curId=b.dataset.id;step=0;go('scheda')}});
+$('#addScheda').addEventListener('click',()=>{const s=blank();schede.push(s);save(s,true);curId=s.id;step=0;go('scheda')});
+$('#delScheda').addEventListener('click',e=>{const b=e.currentTarget;if(b.dataset.c!=='1'){b.dataset.c='1';b.textContent='Tocca ancora per eliminare';setTimeout(()=>{b.dataset.c='';b.textContent='Elimina scheda'},3000);return}
+ schede=schede.filter(s=>s.id!==curId);ls.set('prof-schede-v1',schede);if(col)col.doc(curId).delete().catch(()=>{});b.dataset.c='';b.textContent='Elimina scheda';toast('Scheda eliminata');go('schede')});
+function renderEd(){const s=get(curId);$('#edTitle').textContent=s.titolo||'Nuova scheda';const bk=libri.find(b=>b.id===s.bookId);$('#edSub').textContent=bk?'Dal libro: '+bk.titolo:'';drawPath($('#path2'),s);
+ $('#fMat').value=s.materia;$('#fCap').value=s.capitolo;$('#fTit').value=s.titolo;$('#fPag').value=s.pagine||'';$('#fPagHint').textContent=bk&&(hasPdf(bk.id)||hasPart(bk))?'Il libro completo è sul tablet: il prof legge da solo queste pagine.':bk?'Carica il PDF completo del libro in Libri e il prof leggerà da solo queste pagine.':'';renderMat();renderStep()}
+function renderMat(){const s=get(curId);$('#mThumbs').innerHTML=(s.materiali||[]).map((m,i)=>thumbHTML(m,i,true)).join('')||'<span class="mute">Nessun materiale ancora.</span>';fillThumbs($('#mThumbs'))}
+async function addMat(files){const s=get(curId);$('#mStatus').textContent='Carico…';const imgs=await filesToImages(files);
+ for(const x of imgs){s.materiali.push(await storeImg(x.blob,x.name,$('#mKind').value))}save(s,true);$('#mStatus').textContent=imgs.length?`${imgs.length} pagine aggiunte. Il prof le leggerà quando studiate questo argomento.`:'';renderMat();drawPath($('#path2'),s)}
+$('#mPhoto').addEventListener('change',e=>{addMat([...e.target.files]);e.target.value=''});
+$('#mFile').addEventListener('change',e=>{addMat([...e.target.files]);e.target.value=''});
+$('#mThumbs').addEventListener('click',e=>{const s=get(curId);const d=e.target.closest('[data-del]');if(d){e.stopPropagation();const m=s.materiali.splice(+d.dataset.del,1)[0];save(s,true);if(m?.src==='asset'&&assets)assets.delete(m.id).catch(()=>{});if(m?.src==='local')idb.del('m-'+m.id).catch(()=>{});renderMat();return}
+ const v=e.target.closest('[data-view]');if(v)lightbox(s.materiali[+v.dataset.view])});
+function renderStep(){const s=get(curId),f=FIELDS[step];
+ $('#steps').innerHTML=FIELDS.map((x,i)=>`<button data-i="${i}" class="${i===step?'cur':(s[x.k]||'').trim()?'done':''}" aria-label="${esc(x.t)}">${i+1}</button>`).join('');
+ $('#stTitle').textContent=f.t;liveC?.abort();clearTimeout(liveT);liveLast='';$('#live').hidden=true;$('#stQ').textContent=f.q+' '+f.h;$('#stText').value=s[f.k]||'';
+ $('#stExtra').innerHTML=f.k==='riassunto'?`<div class="checks" style="margin-top:8px"><b>Controllo del riassunto</b>${CONTROLLO.map((c,i)=>`<label><input type="checkbox" data-c="${i}" ${s.controllo?.[i]?'checked':''}>${c}</label>`).join('')}</div>`:'';
+ $('#stPrev').disabled=step===0;$('#stNext').textContent=step===FIELDS.length-1?'Vai a Esponi':'Avanti'}
+$('#steps').addEventListener('click',e=>{const b=e.target.closest('button');if(b){step=+b.dataset.i;renderStep()}});
+$('#stText').addEventListener('input',e=>{const s=get(curId);s[FIELDS[step].k]=e.target.value;save(s);liveCheck()});
+$('#stExtra').addEventListener('change',e=>{const c=e.target.dataset.c;if(c==null)return;const s=get(curId);s.controllo=s.controllo||[];s.controllo[c]=e.target.checked;save(s)});
+for(const [id,k] of [['#fMat','materia'],['#fCap','capitolo'],['#fTit','titolo'],['#fPag','pagine']])$(id).addEventListener('input',e=>{const s=get(curId);s[k]=e.target.value;save(s);if(k==='titolo')$('#edTitle').textContent=s.titolo||'Nuova scheda'});
+$('#stPrev').addEventListener('click',()=>{if(step>0){step--;renderStep()}});
+$('#stNext').addEventListener('click',()=>{drawPath($('#path2'),get(curId));if(step<FIELDS.length-1){step++;renderStep()}else{eId=curId;go('esponi')}});
+$('#stHelp').addEventListener('click',()=>{const s=get(curId),f=FIELDS[step];
+ openProf(s,f.k==='riassunto'?'riassunto':'studio',`Prof, sto compilando la parte "${f.t}" della mia scheda${s.titolo?' su '+s.titolo:''}. ${(s[f.k]||'').trim()?'Ho scritto questo: '+s[f.k].trim():'Non so da dove partire.'} Mi aiuti?`)});
+let liveT=null,liveC=null,liveLast='';
+function liveCheck(){clearTimeout(liveT);if(!sample||!$('#liveOn').checked)return;liveT=setTimeout(async()=>{const s=get(curId),f=FIELDS[step],txt=(s[f.k]||'').trim();
+ if(txt.length<25||txt===liveLast)return;liveLast=txt;liveC?.abort();liveC=new AbortController();const box=$('#live');box.hidden=false;box.innerHTML='<span class="who">Prof</span><span class="typing">sto leggendo…</span>';
+ const pr=`Sei "il Prof", professore virtuale di Adriano (primo anno di liceo scientifico). Correggi IN TEMPO REALE quello che sta scrivendo nella scheda. Italiano, massimo 50 parole, frasi brevi, testo semplice (puoi usare **grassetto**).
+Indica subito un errore di contenuto, una frase incompleta, un termine non specifico o un errore di ortografia, e dai UN consiglio concreto. Non riscrivere tu il testo. Se va bene, dillo in una frase e indica il passo successivo.
+Materia: ${s.materia||'?'} · Argomento: ${s.titolo||'?'} ${s.capitolo||''}
+Parte della scheda: ${f.t} (${f.q})
+Testo di Adriano:\n${txt}`;
+ try{const r=await ai(pr,{quick:true,signal:liveC.signal,onText:({text})=>{box.innerHTML='<span class="who">Prof</span>'+fmt(text)}});box.innerHTML='<span class="who">Prof</span>'+fmt(r.text.trim())}
+ catch(e){if(e?.code==='not_granted'){sample=null;box.hidden=true}else if(e?.name!=='AbortError'&&e?.code!=='aborted')box.hidden=true}},2500)}
+$('#liveOn').addEventListener('change',e=>{if(!e.target.checked){liveC?.abort();$('#live').hidden=true}else{liveLast='';liveCheck()}});
+
+/* ---------- prof: una chat continua per ogni materia ---------- */
+const MATERIE=[['italiano','Italiano'],['geostoria','Geostoria'],['latino','Latino'],['inglese','Inglese'],['matematica','Matematica'],['fisica','Fisica'],['scienze','Scienze'],['informatica','Informatica'],['arte','Disegno e arte'],['motorie','Scienze motorie'],['organizzazione','Organizzazione']];
+function matKey(m){const t=String(m||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');if(!t.trim())return 'organizzazione';
+ if(/motori|sport/.test(t))return 'motorie';if(/religion/.test(t))return 'religione';if(/arte|disegn/.test(t))return 'arte';
+ if(/stori|geogr/.test(t))return 'geostoria';if(/arte|disegn/.test(t))return 'arte';if(/scienz|chimic|biolog|terra/.test(t))return 'scienze';if(/ingl|english/.test(t))return 'inglese';if(/matem|algebr|geometr/.test(t))return 'matematica';if(/fisic/.test(t))return 'fisica';if(/latin/.test(t))return 'latino';if(/italian|grammat|antolog|epica|narrativ/.test(t))return 'italiano';if(/inform/.test(t))return 'informatica';if(/organizz/.test(t))return 'organizzazione';
+ return t.replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30)||'organizzazione'}
+const matName=k=>(MATERIE.find(m=>m[0]===k)||[k,k.charAt(0).toUpperCase()+k.slice(1).replace(/-/g,' ')])[1];
+let chats=ls.get('prof-chats-v1',{}),arcIdx=ls.get('prof-arcs',{}),arcs={},showOld={},welcomed={};
+let mode='studio',pId='',busy=false,pending='',ctrl=null,pend=[],dTarget='say',mat=ls.get('prof-mat','organizzazione');
+const C=k=>chats[k]||(chats[k]={messages:[],memoria:'',memAt:0,updated:0,pId:'',mode:'studio'});
+let chat=C(mat).messages;
+function setMat(k){mat=k;chat=C(k).messages;ls.set('prof-mat',k);pId=C(k).pId&&get(C(k).pId)?C(k).pId:'';mode=C(k).mode||'studio'}
+setMat(mat);
+const cTimers={},cChains={};
+function saveChat(k){const c=C(k);c.updated=Date.now();
+ if(JSON.stringify(c.messages).length>170000){const old=c.messages.splice(0,Math.floor(c.messages.length/2));c.memAt=Math.max(0,c.memAt-old.length);const aid='chatarc-'+k+'-'+Date.now().toString(36);
+  (arcs[k]=arcs[k]||[]).unshift({id:aid,messages:old});(arcIdx[k]=arcIdx[k]||[]).unshift(aid);ls.set('prof-arcs',arcIdx);
+  if(col)col.doc(aid).set({id:aid,kind:'chatarc',mat:k,messages:JSON.parse(JSON.stringify(old))}).catch(()=>{});idb.set('arc-'+aid,old).catch(()=>{})}
+ ls.set('prof-chats-v1',chats);if(!col)return;clearTimeout(cTimers[k]);
+ cTimers[k]=setTimeout(()=>{const body=JSON.parse(JSON.stringify({...C(k),id:'chat-'+k,kind:'chat',mat:k}));cChains[k]=(cChains[k]||Promise.resolve()).then(()=>col.doc('chat-'+k).set(body)).catch(()=>{})},800)}
+function matList(){const keys=MATERIE.map(m=>m[0]);for(const k of [...Object.keys(chats),...schede.map(x=>matKey(x.materia))])if(!k.startsWith('_')&&!keys.includes(k))keys.splice(keys.length-1,0,k);return keys}
+const ME=()=>C('_adriano');
+function renderProf(){
+ $('#mats').innerHTML=matList().map(k=>`<button class="chip" role="tab" data-mat="${esc(k)}" aria-selected="${k===mat}">${esc(matName(k))}</button>`).join('');
+ const sel=$('#mats [aria-selected=true]');if(sel)sel.scrollIntoView({block:'nearest',inline:'center'});
+ const own=schede.filter(x=>matKey(x.materia)===mat);const ps=$('#profScheda');
+ ps.innerHTML='<option value="">Nessun argomento preciso</option>'+own.sort((a,b)=>b.updated-a.updated).map(x=>`<option value="${esc(x.id)}">${esc(x.titolo||'Senza titolo')}</option>`).join('');
+ if(pId&&!own.some(x=>x.id===pId))pId='';ps.value=pId;
+ $('#modes').innerHTML=MODES.map(m=>`<button class="chip" data-m="${m.id}" aria-pressed="${m.id===mode}">${m.t}</button>`).join('');
+ $('#modeHint').textContent=MODES.find(m=>m.id===mode).h;drawMatComp();drawPath($('#path1'),get(pId));drawFocus();voiceUI();drawPend();$('#memBox').hidden=true;
+ drawChat();scrollEnd(true);
+ if(!sample||busy)return;
+ if(pending){const t=pending;pending='';ask(t);return}
+ const last=[...chat].reverse().find(m=>m.role!=='note');
+ if(!last)welcome(true);else if(Date.now()-(last.t||0)>3*3600e3&&!welcomed[mat])welcome(false)}
+function welcome(first){welcomed[mat]=1;chat.push({role:'user',hidden:true,t:Date.now(),content:first?`(Adriano apre per la prima volta la chat di ${matName(mat)}. Salutalo con calore, presentati in due frasi e chiedigli che cosa deve studiare o fare oggi in questa materia, tenendo conto dei compiti.)`:`(Adriano torna nella chat di ${matName(mat)} dopo una pausa. Salutalo come farebbe un insegnante che gli vuole bene: se ti ha raccontato qualcosa di sé l'ultima volta (una partita, un'interrogazione…) chiedigli com'è andata; poi ricordagli in una frase dove eravate rimasti e chiedigli se riprendete da lì o se oggi ha altro da fare.)`});talk()}
+const canSpeak=()=>!!tts||('speechSynthesis' in window);
+const dayLbl=t=>new Date(t).toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+function drawChat(live){let html='';
+ if(showOld[mat])for(const a of (arcs[mat]||[]).slice().reverse())html+=a.messages.filter(m=>!m.hidden).map(m=>m.role==='note'?`<div class="note-line">${esc(m.content)}</div>`:`<div class="msg ${m.role==='assistant'?'prof':'me'}" style="opacity:.75">${m.role==='assistant'?'<span class="who">Prof</span>'+fmt(m.content):esc(m.content)}</div>`).join('');
+ let lastDay='';
+ html+=chat.map((m,i)=>{if(m.hidden)return '';let d='';if(m.t){const dl=dayLbl(m.t);if(dl!==lastDay){lastDay=dl;d=`<div class="day">${esc(dl)}</div>`}}
+  if(m.role==='note')return d+`<div class="note-line">${esc(m.content)}</div>`;
+  return d+`<div class="msg ${m.role==='assistant'?'prof':'me'}">${m.role==='assistant'&&canSpeak()?`<button class="btn sm" data-say="${i}" style="float:right;margin:-4px -4px 4px 8px">Ascolta</button>`:''}${m.role==='assistant'?'<span class="who">Prof</span>'+fmt(m.content):esc(m.content)}${m.imgs?.length?`<div class="thumbs">${m.imgs.map((x,j)=>thumbHTML(x,i+':'+j)).join('')}</div>`:''}</div>`}).join('');
+ if(live!=null)html+=`<div class="msg prof"><span class="who">Prof</span>${live?fmt(live):'<span class="typing">sta pensando…</span>'}</div>`;
+ $('#chat').innerHTML=html;fillThumbs($('#chat'));$('#older').hidden=!(arcIdx[mat]||[]).length||!!showOld[mat]}
+function schedaTxt(s){if(!s)return 'Nessun argomento preciso selezionato: se serve, chiedilo a lui.';
+ return 'SCHEDA DI ADRIANO sull\'argomento attuale (materiale suo: usalo come base, segnala con gentilezza eventuali errori):\nMateria: '+s.materia+'\nCapitolo: '+s.capitolo+'\nArgomento: '+s.titolo+(s.pagine?'\nPagine: '+s.pagine:'')+'\n'+FIELDS.map(f=>f.t+': '+((s[f.k]||'').trim()||'(vuoto)')).join('\n')+((s.materiali||[]).length?'\nMateriali caricati: '+s.materiali.map(m=>m.kind+(m.name?' ('+m.name+')':'')).join(', '):'')}
+const UMANO=`COME PARLI: sei una persona vera, un insegnante appassionato che conosce Adriano da tempo e gli vuole bene. Parli come si parla a voce: frasi naturali, ritmo vario, qualche espressione colloquiale ("dai", "ottimo", "aspetta un attimo", "vediamo insieme"), un po' di umorismo leggero quando ci sta. Chiamalo per nome ogni tanto, non sempre. Reagisci davvero a quello che dice: se è stanco o scoraggiato, riconoscilo con una frase e poi rimettilo in moto; se fa una battuta, sorridi con lui. Ricordati di quello che ti ha raccontato e tiralo fuori al momento giusto (per esempio il calcio per fare un esempio di fisica). Non sembrare un robot: niente elenchi lunghi, niente frasi fatte da assistente, niente "Ottima domanda!". Quando la conversazione è a voce, scrivi in modo che suoni bene letto ad alta voce.`;
+function sys(){const c=C(mat);const altri=schede.filter(x=>matKey(x.materia)===mat&&x.id!==pId).slice(0,15).map(x=>x.titolo).filter(Boolean);
+ return `Sei "il Prof", un professore che studia insieme ad Adriano, studente del primo anno di liceo scientifico. Parli in italiano, gli dai del tu, tono caldo ma esigente.
+${UMANO}
+QUESTA È LA CHAT CONTINUA DI ${matName(mat).toUpperCase()}: ogni giorno Adriano torna qui. Riprendi da dove eravate, collega gli argomenti nuovi a quelli già fatti e usa i tuoi appunti di memoria.${mat==='organizzazione'?' In questa chat lo aiuti a organizzare compiti, tempi e materie.':''}
+QUELLO CHE ADRIANO TI HA RACCONTATO DI SÉ (vale per tutte le materie):
+${ME().memoria||'(ancora niente)'}
+I TUOI APPUNTI SU ADRIANO IN ${matName(mat).toUpperCase()}:
+${c.memoria||'(ancora nessuno: è la prima volta)'}
+REGOLE:
+- Un passo alla volta: UNA domanda o UNA consegna per messaggio.
+- Non fare il lavoro al posto suo: guidalo con domande; se è bloccato dai un indizio o un esempio breve.
+- Messaggi brevi, massimo 90 parole (tranne in modalità Lezione), testo semplice (puoi usare **grassetto** per i termini chiave, niente titoli né tabelle).
+- Correggi SUBITO ogni errore nella sua risposta (contenuto, frase incompleta, termine improprio): di' cosa non va e come migliorarlo, poi fagli riprovare.
+- Adriano può farti domande in qualsiasi momento: rispondi chiaramente con un esempio, verifica che abbia capito, poi riprendi da dove eravate.
+- Pretendi frasi complete e linguaggio specifico della materia.
+- Se c'è il TESTO DEL LIBRO, è la fonte principale: cita la pagina quando serve. Se ci sono immagini allegate, sono pagine del suo libro, spiegazioni, appunti o esercizi: basati su quelle. Se un'immagine è illeggibile, chiedigli di rifarla.
+- Se chiede dove si trova un argomento, cercalo negli indici dei libri e indica libro, capitolo e pagina; se non c'è, dillo.
+- I messaggi tra parentesi tonde sono indicazioni dell'app, non di Adriano.
+- Sei un professore, non un amico del cuore: se racconta problemi seri o di salute, ascolta con gentilezza e suggerisci di parlarne con la mamma o con un adulto di fiducia. Se non sei sicuro di un dato, dillo invece di inventare. Resta sullo studio.
+${STILE}
+${METODO}
+${MODE_TXT[mode]}
+${schedaTxt(get(pId))}
+${altri.length?'Altri argomenti di questa materia già nelle sue schede: '+altri.join('; '):''}
+${booksTxt(get(pId)||(mat!=='organizzazione'?{materia:matName(mat)}:null))}
+${lezTxt()}
+${compitiTxt()}`}
+async function talkImages(){const s=get(pId);const last=[...chat].reverse().find(m=>m.role==='user'&&!m.hidden);const ims=[...(last?.imgs||[])];
+ for(const m of (s?.materiali||[]).slice(-5))if(!ims.some(x=>x.id===m.id))ims.push(m);const out=[];for(const m of ims.slice(0,6)){const b=await getBlob(m);if(b)out.push(b)}return out}
+function apiMsgs(list){const L=list.filter(m=>m.role!=='note').slice(-24).map(m=>({role:m.role,content:m.content+(m.imgs?.length?`\n[ha allegato ${m.imgs.length} immagini]`:'')}));const out=[];
+ for(const m of L){if(out.length&&out[out.length-1].role===m.role)out[out.length-1].content+='\n\n'+m.content;else out.push({...m})}
+ if(out[0]?.role==='user')out.unshift({role:'assistant',content:'Eccomi, continuiamo.'});return out}
+async function talk(){if(!sample||busy)return;busy=true;$('#send').disabled=true;const k=mat,target=chat;drawChat('');
+ const bp=await bookPages(get(pId));
+ const msgs=[{role:'user',content:sys()+(bp?.txt?'\n\n'+bp.txt:'')+($('#voiceOn').checked?'\n\nORA STATE PARLANDO A VOCE: frasi brevi e naturali, niente simboli o elenchi.':'')+'\n\nInizia tu con il primo messaggio.'},...apiMsgs(target)];
+ if(msgs[msgs.length-1].role!=='user')msgs.push({role:'user',content:'(continua)'});
+ ctrl=new AbortController();
+ try{const r=await ai(msgs,{images:[...(bp?.imgs||[]),...await talkImages()].slice(0,8),signal:ctrl.signal,onText:({text})=>{if(k===mat)drawChat(text)}});const t=r.text.trim();target.push({role:'assistant',content:t,t:Date.now()});saveChat(k);if(k===mat&&$('#voiceOn').checked)speakOut(t);updMemory(k)}
+ catch(e){if(e?.name!=='AbortError'&&e?.code!=='aborted')target.push({role:'assistant',content:aiErr(e),t:Date.now(),err:1})}
+ busy=false;$('#send').disabled=false;if(k===mat){drawChat();scrollEnd()}}
+async function updMemory(k){const c=C(k);const n=c.messages.length;if(!sample||n-c.memAt<8)return;c.memAt=n;
+ const recent=c.messages.slice(-24).filter(m=>m.role!=='note'&&!m.hidden&&!m.err).map(m=>(m.role==='assistant'?'Prof: ':'Adriano: ')+m.content).join('\n').slice(-12000);
+ const pr=`Sei il Prof di Adriano (prima liceo scientifico). Aggiorna i tuoi due blocchi di APPUNTI DI MEMORIA dopo questa parte di conversazione in ${matName(k)}.
+Appunti di materia attuali:\n<<<${c.memoria||'(vuoti)'}>>>
+Appunti personali attuali (cose che Adriano ha raccontato di sé):\n<<<${ME().memoria||'(vuoti)'}>>>
+Conversazione recente:\n<<<${recent}>>>
+Rispondi SOLO con JSON: {"materia":"appunti completi per ${matName(k)}, max 180 parole, elenco con - : argomenti affrontati e a che punto è, cosa ha capito bene, errori ricorrenti, cosa ripassare, prossimo passo concordato","personale":"appunti personali completi, max 120 parole, elenco con - : interessi, passioni, impegni in arrivo (partite, verifiche), cosa lo motiva o lo annoia, modi di dire o battute che usa, preferenze su come studiare"}
+Regole: solo fatti detti da lui o emersi dallo studio; niente giudizi sulla persona; non annotare mai informazioni su salute, diagnosi, famiglia privata o altre cose delicate; mantieni quello che negli appunti attuali serve ancora.`;
+ try{const r=await ai(pr,{quick:true});const j=parseJSON(r.text);if(j?.materia){c.memoria=String(j.materia).slice(0,2500);saveChat(k)}if(j?.personale){ME().memoria=String(j.personale).slice(0,1800);saveChat('_adriano')}}catch(e){c.memAt=Math.max(0,n-8)}}
+function ask(t,imgs){chat.push({role:'user',content:t,imgs:imgs?.length?imgs:undefined,t:Date.now()});saveChat(mat);drawChat();scrollEnd();talk()}
+const scrollEnd=now=>window.scrollTo({top:document.body.scrollHeight,behavior:now?'auto':'smooth'});
+function note(t){chat.push({role:'note',content:t,t:Date.now()});saveChat(mat)}
+function stopTalk(){ctrl?.abort();busy=false;$('#send').disabled=false;shush()}
+const reset=stopTalk;
+function openProf(sc,m,text,extra,mk){stopTalk();setMat(mk||(sc?matKey(sc.materia):'organizzazione'));const c=C(mat);
+ if(sc&&pId!==sc.id){pId=sc.id;c.pId=sc.id;note('Argomento: '+(sc.titolo||'senza titolo'))}
+ if(m&&m!==mode){mode=m;c.mode=m;note('Modalità: '+MODES.find(x=>x.id===m).t)}
+ if(extra)for(const x of extra)chat.push({...x,t:Date.now()});saveChat(mat);welcomed[mat]=1;pending=text||'';pend=[];go('prof')}
+$('#mats').addEventListener('click',e=>{const b=e.target.closest('[data-mat]');if(!b||b.dataset.mat===mat)return;stopTalk();setMat(b.dataset.mat);renderProf()});
+$('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b||b.dataset.m===mode)return;mode=b.dataset.m;C(mat).mode=mode;note('Modalità: '+MODES.find(x=>x.id===mode).t);if(mode==='inglese')$('#voiceOn').checked=true;renderProf()});
+$('#profScheda').addEventListener('change',e=>{pId=e.target.value;C(mat).pId=pId;if(pId)note('Argomento: '+(get(pId)?.titolo||''));renderProf()});
+$('#memBtn').addEventListener('click',()=>{const b=$('#memBox');if(!b.hidden){b.hidden=true;return}const m=C(mat).memoria,p=ME().memoria;
+ b.innerHTML='<span class="who">Appunti del prof · '+esc(matName(mat))+'</span>'+(m?fmt(m):'<span class="mute">Il prof scrive i suoi appunti dopo qualche scambio di messaggi.</span>')+(p?'<span class="who" style="margin-top:10px">Cose che Adriano gli ha raccontato</span>'+fmt(p):'');b.hidden=false});
+$('#older').addEventListener('click',async()=>{const ids=arcIdx[mat]||[];arcs[mat]=arcs[mat]||[];for(const id of ids){if(arcs[mat].some(a=>a.id===id))continue;let msgs=null;try{msgs=await idb.get('arc-'+id)}catch(e){}if(!msgs&&col){try{const d=await col.doc(id).get();if(d.exists)msgs=d.data().messages}catch(e){}}if(msgs)arcs[mat].push({id,messages:msgs})}
+ arcs[mat].sort((a,b)=>ids.indexOf(a.id)-ids.indexOf(b.id));showOld[mat]=1;drawChat();window.scrollTo(0,0)});
+function sendNow(){const t=$('#say').value.trim();if((!t&&!pend.length)||busy)return;if(!sample){$('#noAI').hidden=false;return}$('#say').value='';const im=pend;pend=[];drawPend();ask(t||'Ecco la foto.',im)}
+$('#send').addEventListener('click',sendNow);
+$('#say').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&matchMedia('(pointer:fine)').matches){e.preventDefault();sendNow()}});
+$('#quick').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(!b)return;const q=b.dataset.q;if(q.endsWith(': ')){const t=$('#say');t.value=q;t.focus();t.setSelectionRange(q.length,q.length);return}if(!sample){$('#noAI').hidden=false;return}if(busy)return;ask(q)});
+$('#clip').addEventListener('click',()=>$('#clipIn').click());
+$('#clipIn').addEventListener('change',async e=>{const files=[...e.target.files];e.target.value='';toast('Preparo le pagine…');const imgs=await filesToImages(files,8);const s=get(pId);
+ for(const x of imgs){const m=await storeImg(x.blob,x.name,mode==='esercizi'?'Esercizio':'Pagina del libro');pend.push(m);if(s){s.materiali=s.materiali||[];s.materiali.push(m)}}if(s)save(s,true);drawPend();if(imgs.length)toast(s?'Allegate e salvate nella scheda':'Allegate')});
+function drawPend(){$('#pend').innerHTML=pend.map((m,i)=>thumbHTML(m,'p'+i,true)).join('');fillThumbs($('#pend'))}
+$('#pend').addEventListener('click',e=>{const d=e.target.closest('[data-del]');if(d){pend.splice(+String(d.dataset.del).slice(1),1);drawPend()}});
+$('#chat').addEventListener('click',e=>{const b=e.target.closest('[data-say]');if(b){speakOut(chat[+b.dataset.say].content);return}const v=e.target.closest('[data-view]');if(v){const [i,j]=v.dataset.view.split(':');lightbox(chat[+i].imgs[+j])}});
+
+/* ---------- voce ---------- */
+function voiceLines(text,lang){const parts=text.replace(/\*\*/g,'').split(/\n+/).map(x=>x.trim()).filter(Boolean);
+ return parts.map(t=>({text:t.slice(0,1900),language:lang||(mode==='inglese'&&!/^correzione\s*:/i.test(t)&&!/[àèéìòù]/i.test(t)?'en':'it')}))}
+let vz=ls.get('prof-vz',{voice:'rounded',rate:1});$('#vVoice').value=vz.voice;$('#vRate').value=String(vz.rate);
+$('#vVoice').addEventListener('change',e=>{vz.voice=e.target.value;ls.set('prof-vz',vz)});$('#vRate').addEventListener('change',e=>{vz.rate=+e.target.value;ls.set('prof-vz',vz);tts?.setRate?.(vz.rate)});
+$('#vTry').addEventListener('click',()=>speakOut('Ciao Adriano! Sono il tuo prof. Allora, che cosa studiamo oggi?','it'));
+function bestVoice(lang){const V=('speechSynthesis' in window)?speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith(lang)):[];return V.sort((a,b)=>sc(b)-sc(a))[0]||null;function sc(v){return (/premium|enhanced|natural|neural|siri|google/i.test(v.name)?10:0)+(/federica|alice|luca|elsa|diego|paola|serena|daniel|kate|arthur/i.test(v.name)?3:0)+(v.localService?0:1)}}
+function speakOut(text,lang){const L=voiceLines(text,lang);if(!L.length)return;
+ if(tts){tts.speak(L,{voice:vz.voice,rate:(mode==='inglese'?0.92:1)*vz.rate}).catch(e=>{if(e?.code==='not_granted'){tts=null;toast('Voce disattivata per questa app')}else if(e?.code==='no_gesture')toast('Tocca "Ascolta" per sentire il prof')});return}
+ if('speechSynthesis' in window){speechSynthesis.cancel();L.forEach(l=>{const u=new SpeechSynthesisUtterance(l.text);u.lang=l.language==='en'?'en-GB':'it-IT';const bv=bestVoice(l.language==='en'?'en':'it');if(bv)u.voice=bv;u.rate=(l.language==='en'?0.92:1)*vz.rate;u.pitch=1;u.onstart=()=>$('#stopVoice').hidden=false;u.onend=()=>{if(!speechSynthesis.speaking)$('#stopVoice').hidden=true};speechSynthesis.speak(u)})}}
+function shush(){tts?.stop().catch(()=>{});if('speechSynthesis' in window)speechSynthesis.cancel();$('#stopVoice').hidden=true}
+$('#stopVoice').addEventListener('click',shush);
+function voiceUI(){const on=$('#voiceOn').checked;$('#voiceSet').hidden=!on||!canSpeak();$('#vVoice').hidden=$('#vVoice').previousElementSibling.hidden=!tts;$('#talk').hidden=!(on&&dict);$('#mic').hidden=!dict;const h=$('#voiceHint');
+ h.hidden=!on||!!dict;h.textContent='Per rispondere a voce tocca il microfono della tastiera, parla, poi invia. Il prof ti risponde ad alta voce.';ls.set('prof-voice',on)}
+$('#voiceOn').addEventListener('change',()=>{if(!$('#voiceOn').checked)shush();voiceUI()});
+$('#voiceOn').checked=!!ls.get('prof-voice',false);
+function dictStart(target){if(!dict)return false;dTarget=target;shush();const p=(target==='say'&&mode==='inglese')?dict.start({language:'en'}):dict.start();
+ p.catch(e=>{if(e?.code==='not_granted'){dict=null;voiceUI();toast('Microfono non consentito: usa quello della tastiera')}else if(e?.code==='unavailable')toast('Dettatura non disponibile qui: usa il microfono della tastiera');else if(e?.code!=='stopped')toast('Microfono non disponibile, riprova')});return true}
+function micToggle(){if(!dict)return;if(dict.active()){dict.stop().catch(()=>{});return}dictStart('say')}
+$('#mic').addEventListener('click',micToggle);$('#talk').addEventListener('click',micToggle);
+
+/* ---------- concentrazione ---------- */
+let fz=ls.get('prof-focus',null),fzT=null;
+function drawFocus(){const el=$('#focus');if(!fz){el.innerHTML='<button class="bbtn" id="fzGo">Inizia 15 minuti di studio</button>';return}
+ const left=Math.max(0,(fz.end-Date.now())/1000),tot=fz.phase==='studio'?900:300;
+ el.innerHTML=`<span>${fz.phase==='studio'?'Concentrazione':'Pausa'}</span><b>${fmtT(left)}</b><span class="bar"><i style="width:${(1-left/tot)*100}%"></i></span><button class="bbtn" id="fzStop">Stop</button>`}
+function tick(){if(!fz)return;if(Date.now()>=fz.end){if(fz.phase==='studio'){fz={phase:'pausa',end:Date.now()+300000};toast('Bravo! 15 minuti fatti. Ora 5 minuti di pausa: alzati e muoviti.')}else{fz=null;toast('Pausa finita: si riparte!')}ls.set('prof-focus',fz)}drawFocus()}
+$('#focus').addEventListener('click',e=>{if(e.target.id==='fzGo'){fz={phase:'studio',end:Date.now()+900000}}else if(e.target.id==='fzStop')fz=null;else return;ls.set('prof-focus',fz);drawFocus()});
+fzT=setInterval(tick,1000);
+
+/* ---------- esponi ---------- */
+let eId='',eOn=false,eStart=0,eSec=0,eClk=null,eLiveC=null,eLiveT=null,eLastWords=0,eMosse=[0,0,0,0,0,0],eFb='',eTr='';
+const words=t=>(t.trim().match(/\S+/g)||[]).length;
+function renderEsponi(){opts($('#eScheda'),eId||curId||pId,schede.length?null:'Nessun argomento: crea una scheda');eId=$('#eScheda').value;const s=get(eId);
+ drawSix();$('#eHint').textContent=dict?'Il microfono dell\'app trascrive mentre parli.':'Tocca il riquadro e usa il microfono della tastiera: il prof legge mentre parli.';
+ renderHist();renderRecs();renderTools()}
+function drawSix(){$('#six').innerHTML=MOSSE.map((m,i)=>`<span class="${eMosse[i]?'on':''}">${m[0]}</span>`).join('')}
+function renderHist(){const s=get(eId),H=s?.esposizioni||[];$('#eHist').hidden=!H.length;
+ $('#eHistList').innerHTML=H.slice().reverse().map((h,i)=>`<details><summary style="font-size:17px">${new Date(h.date).toLocaleDateString('it-IT',{day:'numeric',month:'short'})} · ${fmtT(h.durata||0)} · ${words(h.testo)} parole</summary><div><p class="hint">Hai detto:</p><p>${esc(h.testo)}</p><div class="msg prof" style="max-width:100%"><span class="who">Prof</span>${fmt(h.feedback||'')}</div></div></details>`).join('')}
+$('#eScheda').addEventListener('change',e=>{eId=e.target.value;renderEsponi()});
+function eStartRun(){eOn=true;eStart=Date.now()-eSec*1000;$('#eGo').textContent='Pausa';$('#eGo').classList.add('live');$('#eEnd').disabled=false;
+ clearInterval(eClk);eClk=setInterval(()=>{eSec=(Date.now()-eStart)/1000;$('#eClock').textContent=fmtT(eSec)},500)}
+function ePause(){eOn=false;clearInterval(eClk);$('#eGo').textContent='Continua';$('#eGo').classList.remove('live')}
+$('#eGo').addEventListener('click',()=>{if(!get(eId)){toast('Scegli prima un argomento');return}
+ if(eOn){if(dict&&dTarget==='esp'&&dict.active())dict.stop().catch(()=>{});ePause();return}
+ if(!eSec){eMosse=[0,0,0,0,0,0];drawSix();$('#eFb').hidden=true;$('#eModel').hidden=true;$('#eTip').className='tip';$('#eTip').textContent='Inizia con la prima mossa: «L\'argomento di cui parlo è…»'}
+ if(!dictStart('esp')){$('#eText').focus()}eStartRun()});
+$('#eText').addEventListener('input',()=>{if(!eOn&&$('#eText').value.trim()&&!eSec)eStartRun();eLive()});
+function eLive(){if(!sample)return;const t=$('#eText').value.trim(),w=words(t);if(w-eLastWords<12)return;clearTimeout(eLiveT);eLiveT=setTimeout(async()=>{
+ const t=$('#eText').value.trim();eLastWords=words(t);const s=get(eId);eLiveC?.abort();eLiveC=new AbortController();
+ const pr=`Sei il Prof di Adriano (prima liceo). Sta facendo un'esposizione orale ad alta voce su "${s?.titolo||'?'}" (${s?.materia||''}); ti arriva la trascrizione mentre parla (può contenere errori di trascrizione: ignorali).
+${s?.idea?'Idea principale dalla sua scheda: '+s.idea:''} ${s?.definizioni?'Definizioni: '+s.definizioni.slice(0,600):''}
+Trascrizione finora:\n"""${t}"""
+Rispondi SOLO con JSON: {"mosse":[presenta,definisci,descrivi,spiega,esempio,conclude] (6 booleani: true se quella mossa è già stata fatta), "errore":"se c'è un errore di contenuto o un termine sbagliato, la correzione in max 14 parole, altrimenti stringa vuota", "consiglio":"cosa dire adesso per andare avanti, max 10 parole, incoraggiante"}`;
+ try{const r=await ai(pr,{quick:true,signal:eLiveC.signal});const j=parseJSON(r.text);if(!j)return;
+  if(Array.isArray(j.mosse))j.mosse.forEach((v,i)=>{if(v)eMosse[i]=1});drawSix();const tip=$('#eTip');
+  if(j.errore){tip.className='tip err';tip.textContent='Attenzione: '+j.errore}else if(j.consiglio){tip.className='tip';tip.textContent=j.consiglio}}catch(e){if(e?.code==='not_granted')sample=null}},1500)}
+$('#eEnd').addEventListener('click',async()=>{if(dict&&dTarget==='esp'&&dict.active()){try{await dict.stop()}catch(e){}}ePause();
+ const t=$('#eText').value.trim(),s=get(eId);if(words(t)<8){toast('Parla ancora un po\' prima di finire');return}
+ if(!sample){$('#noAI').hidden=false;toast('Il prof non è attivo');return}
+ $('#eEnd').disabled=true;$('#eFb').hidden=false;const box=$('#eFbText');box.innerHTML='<span class="who">Prof</span><span class="typing">sto ascoltando la tua esposizione…</span>';eTr=t;
+ const pr=`Sei "il Prof", professore virtuale che insegna ad Adriano (primo anno di liceo scientifico) a fare l'esposizione orale.
+Ha appena esposto ad alta voce l'argomento "${s.titolo}" (${s.materia}). Durata: ${fmtT(eSec)}. Trascrizione dalla voce (può avere errori di trascrizione: non contarli come suoi errori):
+"""${t}"""
+${schedaTxt(s)}
+${(await bookPages(s))?.txt||''}
+${METODO}
+${STILE}
+Valuta come un professore che insegna a esporre. Formato in testo semplice, niente tabelle, usa queste righe:
+**Bene:** 2 punti di forza concreti.
+**Da correggere:** fino a 3 punti; per ognuno cosa ha detto → come dirlo meglio (errori di contenuto, frasi incomplete, termini non specifici, ripetizioni, intercalari come "cioè", "tipo", "praticamente").
+**Le sei mosse:** quali ha fatto e quale manca.
+**Prossima prova:** UNA sola cosa da allenare.
+**Domanda:** una domanda da professore per continuare l'interrogazione.
+Massimo 170 parole, tono incoraggiante, frasi brevi.`;
+ try{const r=await ai(pr,{images:(await Promise.all((s.materiali||[]).slice(-3).map(getBlob))).filter(Boolean),onText:({text})=>{box.innerHTML='<span class="who">Prof</span>'+fmt(text)}});eFb=r.text.trim();box.innerHTML='<span class="who">Prof</span>'+fmt(eFb);
+  s.esposizioni=[...(s.esposizioni||[]),{date:Date.now(),durata:Math.round(eSec),testo:t.slice(0,5000),feedback:eFb}].slice(-6);save(s,true);renderHist();
+  if($('#voiceOn').checked)speakOut(eFb,'it')}
+ catch(e){box.innerHTML='<span class="who">Prof</span>'+esc(aiErr(e))}
+ $('#eEnd').disabled=false;eSec=0;eLastWords=0;$('#eGo').textContent='Nuova prova';$('#eText').value='';$('#eClock').textContent='0:00'});
+$('#eFb').addEventListener('click',async e=>{const a=e.target.dataset.a;if(!a)return;const s=get(eId);
+ if(a==='fb')speakOut(eFb,'it');
+ if(a==='mine'){if(!eTr)return;speakOut(eTr,'it');toast('Ascolta le tue parole: suonano chiare?')}
+ if(a==='model'){if(!sample)return;const box=$('#eModel');box.hidden=false;box.innerHTML='<span class="who">Esempio</span><span class="typing">preparo un esempio…</span>';
+  const pr=`Scrivi un esempio di esposizione orale di circa un minuto (130-160 parole) sull'argomento "${s.titolo}" (${s.materia}), come la direbbe a voce un bravo studente di prima liceo: usa le sei mosse in ordine (presenta, definisci, descrivi, spiega, fai un esempio, concludi), frasi complete e linguaggio specifico. Parti da quello che ha detto Adriano, correggendo e completando:\n"""${eTr}"""\n${schedaTxt(s)}\nSolo il testo, senza titoli.`;
+  try{const r=await ai(pr,{onText:({text})=>{box.innerHTML='<span class="who">Esempio</span>'+fmt(text)}});box.innerHTML='<span class="who">Esempio</span>'+fmt(r.text.trim());speakOut(r.text.trim(),'it')}catch(er){box.innerHTML=esc(aiErr(er))}}
+ if(a==='dialog'){$('#voiceOn').checked=true;openProf(get(eId),'interroga','',[{role:'user',content:'Ho appena fatto questa esposizione orale:\n'+eTr},{role:'assistant',content:eFb}]);setTimeout(()=>{const q=eFb.split('\n').find(l=>/domanda/i.test(l));if(q)speakOut(q.replace(/\*\*domanda:\*\*/i,''),'it')},400)}});
+/* registrazioni */
+let recIdx=ls.get('prof-rec',[]);
+async function addRec(file){if(!file)return;const s=get(eId);const k='r-'+uid();try{await idb.set(k,file);recIdx.unshift({k,scheda:eId,titolo:s?.titolo||'',date:Date.now(),type:file.type||'video/mp4'});recIdx=recIdx.slice(0,20);ls.set('prof-rec',recIdx);toast('Registrazione salvata sul tablet');renderRecs()}catch(e){toast('Non riesco a salvare la registrazione: spazio pieno?')}}
+$('#recIn').addEventListener('change',e=>{addRec(e.target.files[0]);e.target.value=''});
+$('#recAud').addEventListener('change',e=>{addRec(e.target.files[0]);e.target.value=''});
+async function renderRecs(){const L=recIdx.filter(r=>r.scheda===eId);const el=$('#recs');
+ el.innerHTML=L.length?L.map(r=>`<div style="margin-top:12px"><div class="row" style="justify-content:space-between"><b>${new Date(r.date).toLocaleString('it-IT',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</b><button class="btn sm red" data-rdel="${esc(r.k)}">Elimina</button></div>${r.type.startsWith('audio')?'<audio controls data-k="'+esc(r.k)+'"></audio>':'<video controls playsinline data-k="'+esc(r.k)+'"></video>'}</div>`).join(''):'<p class="mute">Nessuna registrazione per questo argomento.</p>';
+ for(const m of el.querySelectorAll('[data-k]')){try{const b=await idb.get(m.dataset.k);if(b)m.src=urls[m.dataset.k]||(urls[m.dataset.k]=URL.createObjectURL(b))}catch(e){}}}
+$('#recs').addEventListener('click',e=>{const k=e.target.dataset.rdel;if(!k)return;if(e.target.dataset.c!=='1'){e.target.dataset.c='1';e.target.textContent='Sicuro?';return}idb.del(k).catch(()=>{});recIdx=recIdx.filter(r=>r.k!==k);ls.set('prof-rec',recIdx);renderRecs()});
+/* strumenti orale */
+let lvSel=0,tm=null,left=0;
+function renderTools(){const s=get(eId);
+ $('#mosse').innerHTML=MOSSE.map((m,i)=>`<div class="mossa"><span class="n">${i+1}. ${m[0]}</span><q>${m[1]}</q><input type="text" data-m="${i}" value="${esc(s?.mosse?.[i]||'')}" placeholder="parola chiave" ${s?'':'disabled'} aria-label="${m[0]}"></div>`).join('');
+ const kws=(s?.parole||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
+ $('#kw').innerHTML=kws.length?kws.map(k=>`<button class="chip" data-k="${esc(k)}">${esc(k)}</button>`).join(''):'<span class="mute">Aggiungi le parole chiave nella scheda (punto 2).</span>';$('#kwQ').innerHTML='';
+ $('#lv').innerHTML=LIVELLI.map((l,i)=>`<button data-l="${i}" class="${s?.livelli?.[i]?'done':''} ${i===lvSel?'sel':''}"><span class="d">${i+1}</span><span><b>${l[0]}</b><br><span class="mute">${l[1]}</span></span></button>`).join('');renderLv();
+ $('#pronto').innerHTML=PRONTO.map((p,i)=>`<label><input type="checkbox" data-p="${i}" ${s?.pronto?.[i]?'checked':''} ${s?'':'disabled'}>${p}</label>`).join('');prontoMsg()}
+function prontoMsg(){const s=get(eId),n=(s?.pronto||[]).filter(Boolean).length;$('#prontoMsg').textContent=n===7?'Sei pronto. Fai un\'ultima interrogazione col prof per conferma.':n?`${n} su 7: allenati ancora sui punti mancanti.`:''}
+function renderLv(){const s=get(eId),l=LIVELLI[lvSel];clearInterval(tm);tm=null;let h='';
+ if(lvSel===3&&s){const kws=(s.parole||'').split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);h+=`<p class="hint">Il tuo schema:</p><div class="kw">${kws.map(k=>`<span class="chip" style="display:inline-flex;align-items:center">${esc(k)}</span>`).join('')||'<span class="mute">nessuna parola chiave</span>'}</div>`}
+ if(l[2]){left=l[2];h+=`<div class="clock" id="tmr" style="text-align:center">${fmtT(left)}</div><div class="row" style="justify-content:center"><button class="btn full" id="tmGo">Via!</button></div>`}
+ else if(lvSel===4)h+=`<button class="btn hi" id="toProf">Inizia l'interrogazione col prof</button>`;
+ else h+=`<p class="mute">Parla ad alta voce, poi segna il livello come fatto.</p>`;
+ if(s)h+=`<div class="row" style="margin-top:10px"><button class="btn sm" id="lvDone">${s.livelli?.[lvSel]?'Fatto ✓ (tocca per annullare)':'Segna come fatto'}</button></div>`;$('#lvBox').innerHTML=h}
+$('#mosse').addEventListener('input',e=>{const i=e.target.dataset.m;if(i==null)return;const s=get(eId);s.mosse=s.mosse||[];s.mosse[i]=e.target.value;save(s)});
+$('#kw').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;$('#kwQ').innerHTML=`<p><b>${esc(b.dataset.k)}</b></p><ol>${KWQ.map(q=>`<li>${q}</li>`).join('')}</ol><p class="note">La parola chiave deve diventare una frase. La frase deve diventare una spiegazione.</p>`});
+$('#lv').addEventListener('click',e=>{const b=e.target.closest('[data-l]');if(!b)return;lvSel=+b.dataset.l;renderTools()});
+$('#lvBox').addEventListener('click',e=>{const s=get(eId);
+ if(e.target.id==='tmGo'){if(tm){clearInterval(tm);tm=null;e.target.textContent='Riprendi';return}e.target.textContent='Pausa';
+  tm=setInterval(()=>{left--;const t=$('#tmr');if(t)t.textContent=fmtT(Math.max(left,0));if(left<=0){clearInterval(tm);tm=null;toast('Tempo! Com\'è andata?');const g=$('#tmGo');if(g)g.textContent='Fatto'}},1000)}
+ if(e.target.id==='toProf'){openProf(get(eId),'interroga','Interrogami su questo argomento.')}
+ if(e.target.id==='lvDone'&&s){s.livelli=s.livelli||[];s.livelli[lvSel]=!s.livelli[lvSel];save(s);renderTools()}});
+$('#pronto').addEventListener('change',e=>{const i=e.target.dataset.p;const s=get(eId);if(i==null||!s)return;s.pronto=s.pronto||[];s.pronto[i]=e.target.checked;save(s);prontoMsg()});
+
+/* ---------- metodo ---------- */
+const GUIDA=[
+ ['1. Come si studia un capitolo','<b>Prima di leggere</b><ul><li>Guarda il titolo e i titoli dei paragrafi.</li><li>Osserva immagini, grafici, formule e tabelle.</li><li>Chiediti: di che cosa parlerà? Che cosa so già? Che cosa devo imparare?</li></ul><b>Durante la lettura</b><ul><li>Leggi un paragrafo alla volta.</li><li>Individua idea principale, concetti, definizioni, esempi e collegamenti.</li><li>Chiudi il libro e prova a spiegare con parole tue. Se non riesci, rileggi.</li></ul><p class="note">Non sottolineare tutto. Prima capisci, poi seleziona.</p>'],
+ ['2. Appunti dal libro','<ol><li><b>Seleziona</b> le informazioni importanti.</li><li><b>Elimina</b> ripetizioni e dettagli secondari.</li><li><b>Riformula</b> con parole tue.</li><li><b>Organizza</b> in ordine logico.</li><li><b>Collega</b> con frecce e parole di collegamento.</li></ol><p><b>Esempio.</b> Testo: I Fenici, per la scarsità di terreni coltivabili, svilupparono il commercio e la navigazione. Appunto: Fenici: costa orientale del Mediterraneo; pochi terreni coltivabili → navigazione e commercio marittimo.</p>'],
+ ['3. Appunti durante la lezione','<ul><li>Definizioni e concetti sottolineati dal professore.</li><li>Esempi e spiegazioni in più rispetto al libro.</li><li>Collegamenti, dubbi, indicazioni sulle cose importanti.</li></ul><p><b>Abbreviazioni:</b> → quindi · ← deriva da · ↑ aumenta · ↓ diminuisce · es. esempio · ca. circa · N.B. attenzione</p><p><b>Dopo la lezione:</b> rileggi, completa le parole mancanti, chiarisci i passaggi, collega al libro.</p>'],
+ ['4. Unire libro e appunti','<ol><li>Abbina gli appunti al paragrafo giusto.</li><li>Individua le informazioni ripetute.</li><li>Aggiungi le spiegazioni del professore.</li><li>Mantieni definizioni, date, formule e termini specifici.</li><li>Crea un unico materiale ordinato.</li></ol><p class="note">Non eliminare un\'informazione solo perché non è nel libro: può essere un\'aggiunta importante del professore.</p>'],
+ ['5. Il riassunto','<ol><li>Leggi e comprendi tutto il paragrafo.</li><li>Individua l\'idea principale.</li><li>Separa il principale dal secondario.</li><li>Metti in ordine logico.</li><li>Scrivi frasi complete con parole tue.</li><li>Rileggi e controlla.</li></ol><p class="note">Non cercare il riassunto più corto: cerca quello più utile per imparare.</p>'],
+ ['6. Dal riassunto allo schema','<ul><li>Argomento principale e definizione.</li><li>Caratteristiche ed elementi principali.</li><li>Cause e conseguenze, se presenti.</li><li>Funzionamento o svolgimento.</li><li>Esempi e collegamenti.</li><li>Date, formule, proprietà o vocaboli.</li></ul>'],
+ ['7. Dallo schema al discorso','<ol>'+MOSSE.map(m=>`<li><b>${m[0]}:</b> «${m[1]}»</li>`).join('')+'</ol><p>Parola chiave: <b>commercio</b>. Che cosa commerciavano? Con chi? Dove? Come trasportavano le merci? Perché era importante?</p><p class="note">La parola chiave deve diventare una frase. La frase deve diventare una spiegazione.</p>'],
+ ['8. Allenarsi a parlare','<ol>'+LIVELLI.map(l=>`<li><b>${l[0]}</b>: ${l[1]}</li>`).join('')+'</ol><p>Se ti blocchi, guarda una parola chiave e riparti da lì.</p>'],
+ ['9. Come capire se sei pronto','<ul>'+PRONTO.map(p=>`<li>${p}</li>`).join('')+'</ul>']];
+function renderMetodo(){drawPath($('#path3'),null);if($('#metodo').children.length)return;
+ $('#metodo').innerHTML=GUIDA.map(g=>`<details><summary>${g[0]}</summary><div>${g[1]}</div></details>`).join('')+'<div class="card"><h3>Il mio obiettivo</h3><p>Non devo studiare soltanto per ricordare. Devo comprendere, organizzare e spiegare ciò che ho imparato con parole mie.</p><p class="note">Non devo essere veloce. Devo essere chiaro. Non devo essere perfetto al primo tentativo. Devo allenarmi per migliorare.</p></div>'}
+
+/* ---------- avvio ---------- */
+$('#logout').addEventListener('click',()=>{if(window.__logout)window.__logout()});
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+route();
+const use=n=>{try{return Promise.resolve(window.claude?.use?.(n)).catch(()=>null)}catch(e){return Promise.resolve(null)}};
+(async()=>{const [d,u]=await Promise.all([use('db'),use('user')]);let id=null;try{id=u?await u.id():null}catch(e){}
+ if(!d)return;const lim=p=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(0),10000))]);
+ try{const bc=d.collection('libri');const bs=await lim(bc.get());bcol=bc;const rb=bs.docs.map(x=>x.data()).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));const ids=new Set(rb.map(b=>b.id));const ex=libri.filter(b=>!ids.has(b.id));libri=[...rb,...ex];if(!libri.length){libri=[{"id": "b9788824744683", "materia": "Italiano", "titolo": "L'agenda di italiano – Sensini", "isbn": "9788824744683", "capitoli": [], "pagine": []}, {"id": "b9788808543806", "materia": "Italiano – Epica", "titolo": "La pagina che non c'era – Epica", "isbn": "9788808543806", "capitoli": [], "pagine": []}, {"id": "b9788808620965", "materia": "Italiano – Narrativa", "titolo": "La pagina che non c'era – Narrativa", "isbn": "9788808620965", "capitoli": [], "pagine": []}, {"id": "b9788849422832", "materia": "Latino", "titolo": "Il nuovo Codex – Volume esercizi 1", "isbn": "9788849422832", "capitoli": [], "pagine": []}, {"id": "b9788808799883", "materia": "Inglese", "titolo": "Performer B1 Phases – Third Edition", "isbn": "9788808799883", "capitoli": [], "pagine": []}, {"id": "b9788808504388", "materia": "Matematica", "titolo": "Matematica Multimediale.blu – Vol. 1", "isbn": "9788808504388", "capitoli": [], "pagine": []}, {"id": "b9788800362962", "materia": "Fisica", "titolo": "Fenomeni e immagini della fisica", "isbn": "9788800362962", "capitoli": [], "pagine": []}, {"id": "b9788893797627", "materia": "Chimica", "titolo": "Il linguaggio della chimica – 2ª edizione", "isbn": "9788893797627", "capitoli": [], "pagine": []}, {"id": "b9788808492043", "materia": "Scienze naturali", "titolo": "Il globo terrestre e la sua evoluzione.blu", "isbn": "9788808492043", "capitoli": [], "pagine": []}, {"id": "b9788858335208", "materia": "Storia e geografia", "titolo": "Radice storica – Volume 1 + Atlante", "isbn": "9788858335208", "capitoli": [], "pagine": []}, {"id": "b9788857730424", "materia": "Disegno", "titolo": "Oltre il disegno – Volume 1", "isbn": "9788857730424", "capitoli": [], "pagine": []}, {"id": "b9788808820204", "materia": "Storia dell'arte", "titolo": "Itinerario nell'arte – Volume 1", "isbn": "9788808820204", "capitoli": [], "pagine": []}, {"id": "b9788857792712", "materia": "Scienze motorie", "titolo": "Tempo di sport – Edizione verde", "isbn": "9788857792712", "capitoli": [], "pagine": []}, {"id": "b9788805081509", "materia": "Religione", "titolo": "Sentinelle dell'aurora – Volume unico", "isbn": "9788805081509", "capitoli": [], "pagine": []}].map(b=>({...b,updated:Date.now()}));ex.push(...libri)}ex.forEach(saveBook);ls.set('prof-libri-v1',libri)}catch(e){bcol=null}
+ if(id){try{const c=d.collection('data/users/'+id);const snap=await lim(c.get());col=c;const remote=snap.docs.map(x=>x.data()).filter(x=>x&&typeof x.id==='string'&&x.id.startsWith('s')).map(x=>JSON.parse(JSON.stringify(x)));
+  for(const x of snap.docs){const d=x.data();if(!d||typeof d.id!=='string')continue;
+   if(d.id.startsWith('chat-')){const k=d.mat||d.id.slice(5);const loc=chats[k];if(!loc||(d.updated||0)>(loc.updated||0)){chats[k]={messages:JSON.parse(JSON.stringify(d.messages||[])),memoria:d.memoria||'',memAt:d.memAt||0,updated:d.updated||0,pId:d.pId||'',mode:d.mode||'studio'}}else saveChat(k)}
+   else if(d.id.startsWith('lez-')){if(!lezioni.some(l=>l.id===d.id.slice(4)))lezioni.push(JSON.parse(JSON.stringify(d)))}
+   else if(d.id.startsWith('chatarc-')){const k=d.mat;arcIdx[k]=arcIdx[k]||[];if(!arcIdx[k].includes(d.id))arcIdx[k].push(d.id);arcIdx[k].sort().reverse()}}
+  for(const k of Object.keys(chats))if(!snap.docs.some(x=>x.id==='chat-'+k))saveChat(k);
+  for(const l of lezioni)if(!snap.docs.some(x=>x.id==='lez-'+l.id))saveLez(l);lezioni.sort((a,b)=>b.date-a.date);ls.set('prof-lezioni-v1',lezioni);
+  ls.set('prof-arcs',arcIdx);ls.set('prof-chats-v1',chats);setMat(mat);
+  try{const cd=c.doc('compiti');const cs=await lim(cd.get());ccol=cd;const items=cs.exists?(cs.data().items||[]):[];const ids2=new Set(items.map(i=>i.id));compiti=[...items.map(i=>JSON.parse(JSON.stringify(i))),...compiti.filter(i=>!ids2.has(i.id))];saveCompiti()}catch(e){ccol=null}
+  const ids=new Set(remote.map(r=>r.id));const extra=schede.filter(s=>!ids.has(s.id));schede=[...remote,...extra];extra.forEach(s=>save(s,true));ls.set('prof-schede-v1',schede)}catch(e){col=null}}
+ const v=location.hash.slice(1);if(v!=='scheda'&&v!=='esponi')route()})();
+(async()=>{assets=await use('assets')})();
+(async()=>{sample=await use('sample');if(sample){try{imgOK=!!(await sample.limits?.())?.images}catch(e){imgOK=false}}if(!sample)$('#noAI').hidden=false;const v=location.hash.slice(1);if(v==='prof'||!v)renderProf()})();
+(async()=>{dict=await use('dictation');if(!dict){voiceUI();return}
+ const dT=()=>dTarget==='esp'?$('#eText'):dTarget==='lez'?$('#lRaw'):$('#say');
+ dict.onFinal(({text})=>{const t=dT();t.value=t.value?t.value+text:text.trimStart();if(dTarget==='esp')eLive()});
+ dict.onPartial(({text})=>{const t=dT();t.placeholder=text||'…'});
+ dict.onState(({state,reason})=>{const on=state==='listening'||state==='starting';
+  if(dTarget==='say'){$('#mic').classList.toggle('live',on);$('#talk').textContent=on?'Ho finito, invia':'Tocca e parla';$('#talk').classList.toggle('live',on);
+   if(state==='idle'&&$('#voiceOn').checked&&(reason==='stopped'||reason==='viewer_stopped')&&$('#say').value.trim())sendNow()}
+  else if(dTarget==='lez'){if(state==='idle'&&lOn){lStop();if(reason!=='stopped')toast(reason==='time_limit'?'60 minuti raggiunti: tocca Continua':'Il microfono si è fermato: tocca Continua')}}
+  else if(state==='idle'&&eOn&&reason!=='stopped')ePause()});
+ voiceUI();if(location.hash==='#esponi')renderEsponi();if(location.hash==='#lezione')renderLezione()})();
+(async()=>{tts=await use('tts');if(tts)tts.onState(({state})=>{$('#stopVoice').hidden=state==='idle'});drawChat()})();
+}
+</script>
+</body>
+</html>

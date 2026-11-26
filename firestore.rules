@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null; }
+    function ownerDoc() { return /databases/$(database)/documents/config/owner; }
+    function isOwner() { return signed() && exists(ownerDoc()) && get(ownerDoc()).data.uid == request.auth.uid; }
+
+    // l'account proprietario: il primo che entra. Solo lui usa PROF.
+    match /config/owner {
+      allow read: if signed();
+      allow create: if signed() && !exists(ownerDoc()) && request.resource.data.uid == request.auth.uid;
+    }
+    // tutto il resto (libri, schede, chat, compiti, lezioni) lo legge e scrive solo l'account di PROF
+    match /{document=**} {
+      allow read, write: if isOwner();
+    }
+  }
+}
