@@ -481,7 +481,7 @@ function lightbox(m){const d=document.createElement('div');d.className='lightbox
 
 /* AI */
 async function ai(input,o={}){const op={cache:false};if(o.signal)op.signal=o.signal;if(o.onText)op.onText=o.onText;if(o.quick)op.modelTier='quick';if(o.complex)op.modelTier='complex';if(o.images?.length&&imgOK)op.images=o.images.slice(0,8);return sample(input,op)}
-const aiErr=e=>{if(e?.code==='not_granted'){sample=null;$('#noAI').hidden=false;return 'Il prof non è attivo: il servizio non riconosce questo account o non è ancora configurato.'}return e?.code==='rate_limited'?'Facciamo una pausa di un minuto e poi riprendiamo.':'Non sono riuscito a rispondere. Riprova tra poco.'};
+const aiErr=e=>{if(e?.code==='not_granted'){sample=null;$('#noAI').hidden=false;return 'Il prof non è attivo: il servizio non riconosce questo account o non è ancora configurato.'}if(e?.code==='credit')return 'Il credito del prof è finito: va ricaricato su console.anthropic.com.';return e?.code==='rate_limited'?'Facciamo una pausa di un minuto e poi riprendiamo.':'Non sono riuscito a rispondere. Riprova tra poco.'};
 
 /* ---------- percorso ---------- */
 function progress(s){const L=s.livelli||[],has=k=>(s[k]||'').trim().length>2;

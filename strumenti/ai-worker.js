@@ -2,8 +2,7 @@
 // Custodisce la chiave di Anthropic: l'app non la vede mai. Risponde solo all'account proprietario di PROF.
 // Impostazioni (nel pannello Cloudflare, vedi LEGGIMI.md):
 //   ANTHROPIC_API_KEY → la chiave presa da console.anthropic.com (segreto)
-//   PROJECT_ID        → id del progetto Firebase di PROF
-//   ORIGIN            → https://ellyrm83.github.io
+//   PROJECT_ID, ORIGIN → facoltativi (predefiniti: prof-2de3c, https://ellyrm83.github.io)
 const MODELS = { quick: "claude-haiku-5-5", default: "claude-haiku-5-5", complex: "claude-sonnet-5-5" };
 // default = Haiku (economico); complex = Sonnet: lo usa l'app per le materie in "qualità alta", le foto, gli indici e la correzione finale dell'esposizione
 const MAXTOK = { quick: 900, default: 1600, complex: 8000 };
@@ -36,12 +35,13 @@ async function isOwner(uid, tok, projectId) {
 export default {
   async fetch(req, env) {
     const origin = env.ORIGIN || "https://ellyrm83.github.io";
+    const PID = env.PROJECT_ID || "prof-2de3c";
     const cors = { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Headers": "Content-Type, Authorization", "Access-Control-Allow-Methods": "POST, OPTIONS" };
     if (req.method === "OPTIONS") return new Response(null, { headers: cors });
     if (req.method !== "POST") return new Response("PROF AI: attivo", { headers: cors });
     const tok = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-    let uid; try { uid = await verificaToken(tok, env.PROJECT_ID); } catch (e) { return new Response("accesso negato", { status: 401, headers: cors }); }
-    if (!(await isOwner(uid, tok, env.PROJECT_ID))) return new Response("accesso negato", { status: 403, headers: cors });
+    let uid; try { uid = await verificaToken(tok, PID); } catch (e) { return new Response("accesso negato", { status: 401, headers: cors }); }
+    if (!(await isOwner(uid, tok, PID))) return new Response("accesso negato", { status: 403, headers: cors });
     let body; try { body = await req.json(); } catch (e) { return new Response("richiesta non valida", { status: 400, headers: cors }); }
     const tier = MODELS[body.tier] ? body.tier : "default";
     if (!Array.isArray(body.messages) || !body.messages.length || JSON.stringify(body.messages).length > 12e6) return new Response("richiesta non valida", { status: 400, headers: cors });
@@ -50,7 +50,7 @@ export default {
       headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({ model: MODELS[tier], max_tokens: MAXTOK[tier], messages: body.messages, stream: true }),
     });
-    if (!r.ok) { const t = await r.text(); return new Response(t, { status: r.status === 429 || r.status === 529 ? 429 : 502, headers: cors }); }
+    if (!r.ok) { const t = await r.text(); if (r.status === 400 && /credit/i.test(t)) return new Response("credito esaurito", { status: 402, headers: cors }); return new Response(t, { status: r.status === 429 || r.status === 529 ? 429 : 502, headers: cors }); }
     return new Response(r.body, { headers: { ...cors, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" } });
   },
 };

@@ -69,7 +69,7 @@
     let r;
     try { r = await fetch(AI, { method: "POST", signal: opts.signal, headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ tier: opts.modelTier || "default", messages: msgs, stream: true }) }); }
     catch (e) { if (e && e.name === "AbortError") throw e; throw { code: "unavailable", message: "rete" }; }
-    if (!r.ok) { const code = r.status === 429 ? "rate_limited" : r.status === 401 || r.status === 403 ? "not_granted" : "unavailable"; throw { code, message: await r.text().catch(() => "") }; }
+    if (!r.ok) { const code = r.status === 402 ? "credit" : r.status === 429 ? "rate_limited" : r.status === 401 || r.status === 403 ? "not_granted" : "unavailable"; throw { code, message: await r.text().catch(() => "") }; }
     const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "", text = "", stop = "";
     for (;;) { const { done, value } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
       let i; while ((i = buf.indexOf("\n\n")) >= 0) { const ev = buf.slice(0, i); buf = buf.slice(i + 2);
