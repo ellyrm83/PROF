@@ -92,6 +92,48 @@
   sample.limits = async () => ({ images: true });
 
   // ---------- microfono: dettatura del browser ----------
+  // microfono "intelligente": registra a pezzi e fa trascrivere a OpenAI (capisce italiano e inglese); se non va, usa quello del browser
+  function cloudDictation(fallback) {
+    if (!AI || !window.MediaRecorder || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return fallback;
+    let stream = null, rec = null, want = false, state = "idle", useFb = false, queue = Promise.resolve(), segT = null, stopRes = null;
+    const H = { p: new Set(), f: new Set(), s: new Set() };
+    const emit = (k, v) => H[k].forEach(f => { try { f(v); } catch (e) {} });
+    const set = (s, reason) => { state = s; emit("s", reason ? { state: s, reason } : { state: s }); };
+    const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"].find(m => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || "";
+    async function send(blob) {
+      if (blob.size < 2500) return;
+      const token = await auth.currentUser.getIdToken();
+      const r = await fetch(AI.replace(/\/$/, "") + "/stt", { method: "POST", headers: { "Content-Type": blob.type || mime || "audio/webm", Authorization: "Bearer " + token }, body: blob });
+      if (!r.ok) throw { code: r.status === 503 ? "nokey" : "unavailable" };
+      const j = await r.json(); const t = String(j.text || "").trim();
+      if (t && !/^(sottotitoli|grazie per la visione|amara\.org)/i.test(t)) emit("f", { text: " " + t });
+    }
+    function segment() {
+      const chunks = []; const r = rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      r.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+      r.onstop = () => { const blob = new Blob(chunks, { type: r.mimeType || mime || "audio/webm" });
+        emit("p", { text: "…sto capendo" });
+        queue = queue.then(() => send(blob)).catch(e => { if (e && e.code === "nokey" && fallback) { useFb = true; } }).then(() => { if (!want) emit("p", { text: "" }); });
+        if (want) segment(); else { stream.getTracks().forEach(t => t.stop()); stream = null; queue.then(() => { set("idle", "stopped"); if (stopRes) { stopRes(); stopRes = null; } }); } };
+      r.start(); emit("p", { text: "Ti ascolto…" });
+      clearTimeout(segT); segT = setTimeout(() => { if (want && r.state === "recording") r.stop(); }, 12000);
+    }
+    const api = {
+      async start(o) { if (useFb && fallback) return fallback.start(o);
+        try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+        catch (e) { return Promise.reject({ code: e && e.name === "NotAllowedError" ? "not_granted" : "unavailable" }); }
+        want = true; set("listening"); segment(); },
+      stop() { if (useFb && fallback && fallback.active()) return fallback.stop(); want = false; clearTimeout(segT);
+        if (!rec || rec.state !== "recording") { set("idle", "stopped"); return Promise.resolve(); }
+        set("finishing"); return new Promise(r => { stopRes = r; try { rec.stop(); } catch (e) { r(); } }); },
+      active: () => (useFb && fallback ? fallback.active() : state !== "idle"),
+      onPartial: f => { H.p.add(f); const u = fallback && fallback.onPartial(f); return () => { H.p.delete(f); u && u(); }; },
+      onFinal: f => { H.f.add(f); const u = fallback && fallback.onFinal(f); return () => { H.f.delete(f); u && u(); }; },
+      onState: f => { H.s.add(f); const u = fallback && fallback.onState(f); return () => { H.s.delete(f); u && u(); }; },
+    };
+    return api;
+  }
+
   function dictation() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return null;
     let rec = null, want = false, state = "idle", lang = "it-IT", stopRes = null;
@@ -120,7 +162,7 @@
       else if (o.data().uid !== u.uid) { gate("<h1>PROF</h1><p>Questo account non è quello di PROF. Entra con l'account di casa.</p><button class='b' onclick='__logout()'>Esci</button>"); return; } }
     catch (e) { if (e && e.code === "permission-denied") { gate("<h1>PROF</h1><p>Questo account non è quello di PROF. Entra con l'account di casa.</p><button class='b' onclick='__logout()'>Esci</button>"); return; } }
     const user = { id: async () => u.uid, isOwner: async () => true, canEdit: async () => true, can: async () => true, email: async () => u.email };
-    impl = { db, user, sample, dictation: dictation() };
+    impl = { db, user, sample, dictation: cloudDictation(dictation()) };
     ungate(); ready();
   });
 })();

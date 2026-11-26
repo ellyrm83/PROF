@@ -40,11 +40,30 @@ export default {
     const cors = { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Headers": "Content-Type, Authorization", "Access-Control-Allow-Methods": "POST, OPTIONS" };
     if (req.method === "OPTIONS") return new Response(null, { headers: cors });
     if (req.method !== "POST") {
-      return new Response("PROF AI: attivo · versione 3 · voce " + (env.OPENAI_API_KEY ? "naturale pronta" : "da collegare"), { headers: cors });
+      return new Response("PROF AI: attivo · versione 4 · voce " + (env.OPENAI_API_KEY ? "naturale pronta" : "da collegare"), { headers: cors });
     }
     const tok = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     let uid; try { uid = await verificaToken(tok, PID); } catch (e) { return new Response("accesso negato", { status: 401, headers: cors }); }
     if (!(await isOwner(uid, tok, PID))) return new Response("accesso negato", { status: 403, headers: cors });
+    // comprensione della voce (OpenAI): POST /stt con l'audio registrato → testo, italiano o inglese riconosciuti da soli
+    if (new URL(req.url).pathname === "/stt") {
+      if (!env.OPENAI_API_KEY) return new Response("manca OPENAI_API_KEY", { status: 503, headers: cors });
+      const type = (req.headers.get("Content-Type") || "audio/webm").split(";")[0];
+      const buf = await req.arrayBuffer(); if (!buf.byteLength || buf.byteLength > 20e6) return new Response("audio non valido", { status: 400, headers: cors });
+      const ext = /mp4|m4a|aac/.test(type) ? "mp4" : /ogg/.test(type) ? "ogg" : /wav/.test(type) ? "wav" : /mpeg|mp3/.test(type) ? "mp3" : "webm";
+      const fd = new FormData();
+      fd.append("file", new File([buf], "voce." + ext, { type }));
+      fd.append("model", "gpt-4o-mini-transcribe");
+      fd.append("response_format", "json");
+      fd.append("prompt", "Adriano, studente italiano di 14 anni, parla con il suo professore. Può parlare in italiano oppure in inglese (English speaking practice): trascrivi esattamente nella lingua in cui parla, senza tradurre.");
+      let r;
+      try { r = await fetch("https://api.openai.com/v1/audio/transcriptions", { method: "POST", headers: { Authorization: "Bearer " + env.OPENAI_API_KEY }, body: fd }); }
+      catch (e) { return new Response("OpenAI non raggiungibile", { status: 502, headers: cors }); }
+      const t = await r.text();
+      if (!r.ok) return new Response("OpenAI " + r.status + ": " + t.slice(0, 200), { status: /quota|billing|insufficient/i.test(t) ? 402 : 502, headers: cors });
+      let text = ""; try { text = JSON.parse(t).text || ""; } catch (e) {}
+      return new Response(JSON.stringify({ text }), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
     // voce naturale del prof (OpenAI gpt-4o-mini-tts): POST /tts {text, lang, voice}
     if (new URL(req.url).pathname === "/tts") {
       if (!env.OPENAI_API_KEY) return new Response("manca OPENAI_API_KEY", { status: 503, headers: cors });
