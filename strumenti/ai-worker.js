@@ -38,7 +38,20 @@ export default {
     const PID = env.PROJECT_ID || "prof-2de3c";
     const cors = { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Headers": "Content-Type, Authorization", "Access-Control-Allow-Methods": "POST, OPTIONS" };
     if (req.method === "OPTIONS") return new Response(null, { headers: cors });
-    if (req.method !== "POST") return new Response("PROF AI: attivo", { headers: cors });
+    if (req.method !== "POST") {
+      // diagnosi temporanea: una richiesta minima ad Anthropic per ogni modello (costo trascurabile)
+      if (new URL(req.url).pathname === "/diagnosi-7f3k") {
+        if (!env.ANTHROPIC_API_KEY) return new Response("manca ANTHROPIC_API_KEY", { headers: cors });
+        const out = [];
+        for (const m of ["claude-haiku-5-5", "claude-sonnet-5-5"]) {
+          const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: m, max_tokens: 5, messages: [{ role: "user", content: "ciao" }] }) });
+          out.push(m + " → " + r.status + " " + (await r.text()).slice(0, 300));
+        }
+        out.push("chiave: " + String(env.ANTHROPIC_API_KEY).slice(0, 10) + "…");
+        return new Response(out.join("\n"), { headers: cors });
+      }
+      return new Response("PROF AI: attivo", { headers: cors });
+    }
     const tok = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     let uid; try { uid = await verificaToken(tok, PID); } catch (e) { return new Response("accesso negato", { status: 401, headers: cors }); }
     if (!(await isOwner(uid, tok, PID))) return new Response("accesso negato", { status: 403, headers: cors });
