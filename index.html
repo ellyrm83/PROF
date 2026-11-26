@@ -12,8 +12,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="config.js?v=5"></script>
-<script src="adapter.js?v=5"></script>
+<script src="config.js?v=6"></script>
+<script src="adapter.js?v=6"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Kalam:wght@400;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -555,8 +555,8 @@ const thumbHTML=(m,i,del)=>`<button class="thumb" data-view="${i}" aria-label="A
 function lightbox(m){const d=document.createElement('div');d.className='lightbox';d.innerHTML='<img alt=""><button class="btn hi sm">Chiudi</button>';document.body.appendChild(d);getBlob(m).then(b=>{if(b)d.querySelector('img').src=urls[m.id]||(urls[m.id]=URL.createObjectURL(b))});d.addEventListener('click',()=>d.remove())}
 
 /* AI */
-async function ai(input,o={}){const op={cache:false};if(o.signal)op.signal=o.signal;if(o.onText)op.onText=o.onText;if(o.quick)op.modelTier='quick';if(o.complex)op.modelTier='complex';if(o.images?.length&&imgOK)op.images=o.images.slice(0,8);return sample(input,op)}
-const aiErr=e=>{if(e?.code==='not_granted'){sample=null;$('#noAI').hidden=false;return 'Il prof non è attivo: il servizio non riconosce questo account o non è ancora configurato.'}if(e?.code==='credit')return 'Il credito del prof è finito: va ricaricato su console.anthropic.com.';return e?.code==='rate_limited'?'Facciamo una pausa di un minuto e poi riprendiamo.':'Non sono riuscito a rispondere. Riprova tra poco.'};
+async function ai(input,o={}){const op={cache:false};if(o.web)op.web=true;if(o.signal)op.signal=o.signal;if(o.onText)op.onText=o.onText;if(o.quick)op.modelTier='quick';if(o.complex)op.modelTier='complex';if(o.images?.length&&imgOK)op.images=o.images.slice(0,8);return sample(input,op)}
+const aiErr=e=>{if(e?.code==='not_granted'){sample=null;$('#noAI').hidden=false;return 'Il prof non è attivo: il servizio non riconosce questo account o non è ancora configurato.'}if(e?.code==='credit')return 'Il credito del prof è finito: va ricaricato su console.anthropic.com.';return e?.code==='rate_limited'?'Facciamo una pausa di un minuto e poi riprendiamo.':'Non sono riuscito a rispondere. Riprova tra poco.'+(e?.message?' ('+String(e.message).slice(0,160)+')':'')};
 
 /* ---------- percorso ---------- */
 function progress(s){const L=s.livelli||[],has=k=>(s[k]||'').trim().length>2;
@@ -904,6 +904,7 @@ REGOLE:
 - Se chiede dove si trova un argomento, cercalo negli indici dei libri e indica libro, capitolo e pagina; se non c'è, dillo.
 - I messaggi tra parentesi tonde sono indicazioni dell'app, non di Adriano.
 - Sei un professore, non un amico del cuore: se racconta problemi seri o di salute, ascolta con gentilezza e suggerisci di parlarne con la mamma o con un adulto di fiducia. Se non sei sicuro di un dato, dillo invece di inventare. Resta sullo studio.
+- Se non hai il testo del libro né pagine allegate e ti serve un'informazione precisa (definizioni, date, dati, regole), puoi cercare sul web: poche ricerche, fonti affidabili (Treccani, siti di editori scolastici, enciclopedie, Wikipedia, siti universitari). Dillo ad Adriano in una frase ("ho controllato su…") e ricordagli che il suo libro può spiegarlo in modo un po' diverso.
 ${STILE}
 ${METODO}
 ${MODE_TXT[mode]}
@@ -922,8 +923,8 @@ async function talk(){if(!sample||busy)return;busy=true;$('#send').disabled=true
  const msgs=[{role:'user',content:sys()+(bp?.txt?'\n\n'+bp.txt:'')+($('#voiceOn').checked?'\n\nORA STATE PARLANDO A VOCE: frasi brevi e naturali, niente simboli o elenchi.':'')+'\n\nInizia tu con il primo messaggio.'},...apiMsgs(target)];
  if(msgs[msgs.length-1].role!=='user')msgs.push({role:'user',content:'(continua)'});
  ctrl=new AbortController();
- const ti=await talkImages(),c0=C(k);c0.sentPg=c0.sentPg||'';const pgKey=(get(pId)?.bookId||'')+'|'+(get(pId)?.pagine||'');const pimgs=bp?.imgs?.length&&c0.sentPg!==pgKey?bp.imgs:[];
- try{const r=await ai(msgs,{images:[...pimgs,...ti.out].slice(0,8),complex:(C(k).qual==='alta')||(ti.out.length+pimgs.length>0&&C(k).qual!=='eco-only'),signal:ctrl.signal,onText:({text})=>{if(k===mat)drawChat(text)}});const t=r.text.trim();c0.sent=[...new Set([...(c0.sent||[]),...ti.ids])].slice(-200);if(pimgs.length)c0.sentPg=pgKey;target.push({role:'assistant',content:t,t:Date.now()});saveChat(k);if(k===mat&&$('#voiceOn').checked)speakOut(t);updMemory(k)}
+ const ti=await talkImages(),c0=C(k);const web=!bp?.txt&&mat!=='organizzazione';c0.sentPg=c0.sentPg||'';const pgKey=(get(pId)?.bookId||'')+'|'+(get(pId)?.pagine||'');const pimgs=bp?.imgs?.length&&c0.sentPg!==pgKey?bp.imgs:[];
+ try{const r=await ai(msgs,{images:[...pimgs,...ti.out].slice(0,8),web,complex:(C(k).qual==='alta')||(ti.out.length+pimgs.length>0&&C(k).qual!=='eco-only'),signal:ctrl.signal,onText:({text})=>{if(k===mat)drawChat(text)}});const t=r.text.trim();c0.sent=[...new Set([...(c0.sent||[]),...ti.ids])].slice(-200);if(pimgs.length)c0.sentPg=pgKey;target.push({role:'assistant',content:t,t:Date.now()});saveChat(k);if(k===mat&&$('#voiceOn').checked)speakOut(t);updMemory(k)}
  catch(e){if(e?.name!=='AbortError'&&e?.code!=='aborted')target.push({role:'assistant',content:aiErr(e),t:Date.now(),err:1})}
  busy=false;$('#send').disabled=false;if(k===mat){drawChat();scrollEnd()}}
 async function updMemory(k){const c=C(k);const n=c.messages.length;if(!sample||n-c.memAt<8)return;c.memAt=n;

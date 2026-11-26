@@ -45,12 +45,21 @@ export default {
     let body; try { body = await req.json(); } catch (e) { return new Response("richiesta non valida", { status: 400, headers: cors }); }
     const tier = MODELS[body.tier] ? body.tier : "default";
     if (!Array.isArray(body.messages) || !body.messages.length || JSON.stringify(body.messages).length > 12e6) return new Response("richiesta non valida", { status: 400, headers: cors });
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: MODELS[tier], max_tokens: MAXTOK[tier], messages: body.messages, stream: true }),
-    });
-    if (!r.ok) { const t = await r.text(); if (r.status === 400 && /credit/i.test(t)) return new Response("credito esaurito", { status: 402, headers: cors }); return new Response(t, { status: r.status === 429 || r.status === 529 ? 429 : 502, headers: cors }); }
+    if (!env.ANTHROPIC_API_KEY) return new Response(JSON.stringify({ stato: 0, errore: "Manca il segreto ANTHROPIC_API_KEY su Cloudflare" }), { status: 502, headers: cors });
+    const payload = { model: MODELS[tier], max_tokens: MAXTOK[tier], messages: body.messages, stream: true };
+    // ricerca sul web (server di Anthropic): solo quando l'app la chiede, al massimo 3 ricerche per risposta
+    if (body.web) payload.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }];
+    let r;
+    try { r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" }, body: JSON.stringify(payload) }); }
+    catch (e) { return new Response(JSON.stringify({ stato: 0, errore: "Anthropic non raggiungibile" }), { status: 502, headers: cors }); }
+    if (!r.ok) {
+      const t = await r.text();
+      if (/credit balance|credit/i.test(t) && r.status === 400) return new Response("credito esaurito", { status: 402, headers: cors });
+      // se la ricerca web non è attiva sull'account, riprova senza
+      if (body.web && r.status === 400 && /web_search|tool/i.test(t)) { delete payload.tools; const r2 = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" }, body: JSON.stringify(payload) }); if (r2.ok) return new Response(r2.body, { headers: { ...cors, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" } }); }
+      let msg = t; try { msg = JSON.parse(t).error.message; } catch (e) {}
+      return new Response(JSON.stringify({ stato: r.status, errore: String(msg).slice(0, 300) }), { status: r.status === 429 || r.status === 529 ? 429 : 502, headers: cors });
+    }
     return new Response(r.body, { headers: { ...cors, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" } });
   },
 };

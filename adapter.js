@@ -69,9 +69,9 @@
     if (opts.images && opts.images.length) { const last = msgs[msgs.length - 1]; for (const im of opts.images.slice(0, 8)) last.content.unshift({ type: "image", source: { type: "base64", media_type: im.type && im.type.startsWith("image/") ? im.type : "image/jpeg", data: await b64(im) } }); }
     const token = await auth.currentUser.getIdToken();
     let r;
-    try { r = await fetch(AI, { method: "POST", signal: opts.signal, headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ tier: opts.modelTier || "default", messages: msgs, stream: true }) }); }
+    try { r = await fetch(AI, { method: "POST", signal: opts.signal, headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ tier: opts.modelTier || "default", messages: msgs, stream: true, web: !!opts.web }) }); }
     catch (e) { if (e && e.name === "AbortError") throw e; throw { code: "unavailable", message: "rete" }; }
-    if (!r.ok) { const code = r.status === 402 ? "credit" : r.status === 429 ? "rate_limited" : r.status === 401 || r.status === 403 ? "not_granted" : "unavailable"; throw { code, message: await r.text().catch(() => "") }; }
+    if (!r.ok) { const code = r.status === 402 ? "credit" : r.status === 429 ? "rate_limited" : r.status === 401 || r.status === 403 ? "not_granted" : "unavailable"; let t = await r.text().catch(() => ""); try { const j = JSON.parse(t); t = (j.stato ? "Anthropic " + j.stato + ": " : "") + j.errore; } catch (e) {} throw { code, message: t }; }
     const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "", text = "", stop = "";
     for (;;) { const { done, value } = await rd.read(); if (done) break; buf += dec.decode(value, { stream: true });
       let i; while ((i = buf.indexOf("\n\n")) >= 0) { const ev = buf.slice(0, i); buf = buf.slice(i + 2);
