@@ -1,0 +1,12 @@
+{
+  // Servizio AI di PROF: Cloudflare lo legge da GitHub e lo pubblica da solo.
+  "name": "prof",
+  "main": "strumenti/ai-worker.js",
+  "compatibility_date": "2025-01-01",
+  "workers_dev": true,
+  "vars": {
+    "PROJECT_ID": "prof-2de3c",
+    "ORIGIN": "https://ellyrm83.github.io"
+  }
+  // La chiave ANTHROPIC_API_KEY si inserisce nel pannello Cloudflare come "Segreto"
+}

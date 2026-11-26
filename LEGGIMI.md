@@ -33,10 +33,10 @@ Poi **Authentication → Impostazioni → Domini autorizzati → Aggiungi domini
 
 ## 6. Il servizio del prof su Cloudflare
 1. Su https://dash.cloudflare.com → **Workers & Pages → Crea → Importa un repository** → scegli il repository `prof`.
-   - Directory principale: `strumenti` · comando di deploy: `npx wrangler deploy`.
+   - Nome progetto: `prof` · comando di deploy: `npx wrangler deploy` (il file `wrangler.jsonc` è già nella cartella principale).
 2. Prima di pubblicare, in `strumenti/wrangler.jsonc` deve esserci il tuo `PROJECT_ID` di Firebase (lo inserisce Claude con il passo 4).
 3. Dopo la pubblicazione: **Impostazioni → Variabili e segreti → Aggiungi → Segreto** → nome `ANTHROPIC_API_KEY` → incolla la chiave del passo 5.
-4. Copia l'indirizzo del servizio (tipo `https://prof-ai.<tuo-nome>.workers.dev`) e mandalo a Claude: lo inserisce in `config.js`.
+4. Copia l'indirizzo del servizio (tipo `https://prof.<tuo-nome>.workers.dev`) e mandalo a Claude: lo inserisce in `config.js`.
 
 ## 7. Primo accesso
 - Apri https://ellyrm83.github.io/PROF/ e tocca **Crea l'account**: il primo account diventa quello di PROF, e **nessun altro** può entrare.
