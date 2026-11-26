@@ -51,3 +51,10 @@ Chat, memoria del prof, schede, compiti, indici dei libri e lezioni sono nel dat
 - La chiave di Anthropic sta solo su Cloudflare: l'app non la vede mai.
 - Il servizio risponde solo all'account di PROF (controlla l'accesso di Firebase).
 - Il limite di spesa di Anthropic impedisce sorprese: se lo raggiungi, il prof si ferma fino al mese dopo.
+
+
+## Voce naturale (facoltativa)
+1. Vai su platform.openai.com → crea l'account → Billing → carica un credito (es. 5 $). Niente addebiti automatici.
+2. API keys → Create new secret key → copiala con l'icona (non fare screenshot).
+3. Cloudflare → Workers → prof → Impostazioni → Variabili e segreti → Aggiungi → tipo Segreto, nome `OPENAI_API_KEY`, valore la chiave → Distribuisci.
+4. Nell'app: Impostazioni del genitore → Voce naturale → Prova.

@@ -2,6 +2,7 @@
 // Custodisce la chiave di Anthropic: l'app non la vede mai. Risponde solo all'account proprietario di PROF.
 // Impostazioni (nel pannello Cloudflare, vedi LEGGIMI.md):
 //   ANTHROPIC_API_KEY → la chiave presa da console.anthropic.com (segreto)
+//   OPENAI_API_KEY → la chiave presa da platform.openai.com, per la voce naturale (segreto, facoltativo)
 //   PROJECT_ID, ORIGIN → facoltativi (predefiniti: prof-2de3c, https://ellyrm83.github.io)
 const MODELS = { quick: "claude-haiku-5-5", default: "claude-haiku-5-5", complex: "claude-sonnet-5-5" };
 // default = Haiku (economico); complex = Sonnet: lo usa l'app per le materie in "qualità alta", le foto, gli indici e la correzione finale dell'esposizione
@@ -39,22 +40,28 @@ export default {
     const cors = { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Headers": "Content-Type, Authorization", "Access-Control-Allow-Methods": "POST, OPTIONS" };
     if (req.method === "OPTIONS") return new Response(null, { headers: cors });
     if (req.method !== "POST") {
-      // diagnosi temporanea: una richiesta minima ad Anthropic per ogni modello (costo trascurabile)
-      if (new URL(req.url).pathname === "/diagnosi-7f3k") {
-        if (!env.ANTHROPIC_API_KEY) return new Response("manca ANTHROPIC_API_KEY", { headers: cors });
-        const out = [];
-        for (const m of ["claude-haiku-5-5", "claude-sonnet-5-5"]) {
-          const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" }, body: JSON.stringify({ model: m, max_tokens: 5, messages: [{ role: "user", content: "ciao" }] }) });
-          out.push(m + " → " + r.status + " " + (await r.text()).slice(0, 300));
-        }
-        out.push("chiave: " + String(env.ANTHROPIC_API_KEY).slice(0, 10) + "…");
-        return new Response(out.join("\n"), { headers: cors });
-      }
-      return new Response("PROF AI: attivo", { headers: cors });
+      return new Response("PROF AI: attivo · versione 3 · voce " + (env.OPENAI_API_KEY ? "naturale pronta" : "da collegare"), { headers: cors });
     }
     const tok = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     let uid; try { uid = await verificaToken(tok, PID); } catch (e) { return new Response("accesso negato", { status: 401, headers: cors }); }
     if (!(await isOwner(uid, tok, PID))) return new Response("accesso negato", { status: 403, headers: cors });
+    // voce naturale del prof (OpenAI gpt-4o-mini-tts): POST /tts {text, lang, voice}
+    if (new URL(req.url).pathname === "/tts") {
+      if (!env.OPENAI_API_KEY) return new Response("manca OPENAI_API_KEY", { status: 503, headers: cors });
+      let b; try { b = await req.json(); } catch (e) { return new Response("richiesta non valida", { status: 400, headers: cors }); }
+      const text = String(b.text || "").slice(0, 3800); if (!text.trim()) return new Response("vuoto", { status: 400, headers: cors });
+      const en = b.lang === "en";
+      const VOCI = ["marin", "cedar", "ash", "ballad", "coral", "echo", "sage", "verse", "alloy", "nova", "onyx", "shimmer", "fable"];
+      const voice = VOCI.includes(b.voice) ? b.voice : "cedar";
+      const instructions = en
+        ? "You are a warm, friendly English teacher talking one-to-one with a 14-year-old Italian student. Speak naturally and conversationally, like a real person, with a clear British accent, relaxed pace, natural pauses and gentle enthusiasm. Never sound like you are reading."
+        : "Sei un professore italiano simpatico e caloroso che parla a tu per tu con un ragazzo di 14 anni. Parla in italiano con accento italiano naturale e neutro, come una persona vera in una conversazione: ritmo rilassato, pause naturali, intonazione viva e variata, un sorriso nella voce. Non sembrare mai uno che legge.";
+      let r;
+      try { r = await fetch("https://api.openai.com/v1/audio/speech", { method: "POST", headers: { "content-type": "application/json", Authorization: "Bearer " + env.OPENAI_API_KEY }, body: JSON.stringify({ model: "gpt-4o-mini-tts", voice, input: text, instructions, response_format: "mp3" }) }); }
+      catch (e) { return new Response("OpenAI non raggiungibile", { status: 502, headers: cors }); }
+      if (!r.ok) { const t = await r.text(); return new Response("OpenAI " + r.status + ": " + t.slice(0, 200), { status: /quota|billing|insufficient/i.test(t) ? 402 : 502, headers: cors }); }
+      return new Response(r.body, { headers: { ...cors, "Content-Type": "audio/mpeg", "Cache-Control": "no-store" } });
+    }
     let body; try { body = await req.json(); } catch (e) { return new Response("richiesta non valida", { status: 400, headers: cors }); }
     const tier = MODELS[body.tier] ? body.tier : "default";
     if (!Array.isArray(body.messages) || !body.messages.length || JSON.stringify(body.messages).length > 12e6) return new Response("richiesta non valida", { status: 400, headers: cors });

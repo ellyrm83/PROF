@@ -12,8 +12,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="config.js?v=7"></script>
-<script src="adapter.js?v=7"></script>
+<script src="config.js?v=8"></script>
+<script src="adapter.js?v=8"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Kalam:wght@400;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -435,6 +435,10 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
   <div class="card" id="pinBox"></div>
   <div id="setBox" hidden>
    <div class="card"><h3>Qualità del prof</h3><p class="hint">Economica (Haiku) costa circa venti volte meno. Alta (Sonnet) ragiona meglio negli esercizi lunghi. Foto, indici e correzione finale dell'esposizione usano sempre la qualità alta.</p><div id="setQual"></div></div>
+   <div class="card"><h3>Voce naturale</h3><p class="hint">Voce realistica di OpenAI, come una persona vera (circa 1,5 centesimi al minuto di parlato). Se non è collegata o il credito finisce, il prof usa la voce del dispositivo qui sotto.</p>
+    <label class="tog"><input type="checkbox" id="nvOn">Usa la voce naturale</label>
+    <label class="f" for="nvVoice">Voce</label><select id="nvVoice"><option value="cedar">Cedar · maschile, calda</option><option value="ash">Ash · maschile, chiara</option><option value="verse">Verse · maschile, espressiva</option><option value="echo">Echo · maschile, tranquilla</option><option value="marin">Marin · femminile, naturale</option><option value="coral">Coral · femminile, allegra</option><option value="sage">Sage · femminile, calma</option><option value="ballad">Ballad · morbida</option></select>
+    <div class="row" style="margin-top:10px"><button class="btn sm" id="nvTry">Prova la voce naturale</button></div><p class="hint" id="nvNote"></p></div>
    <div class="card"><h3>Voce del prof</h3><p class="hint">Sono le voci installate su questo dispositivo: prova e scegli la più naturale. La scelta vale per questo dispositivo.</p>
     <label class="f" for="vzIt">Voce italiana</label><select id="vzIt"></select>
     <label class="f" for="vzEn">Voce inglese (English speaking)</label><select id="vzEn"></select>
@@ -952,7 +956,11 @@ function openProf(sc,m,text,extra,mk){stopTalk();setMat(mk||(sc?matKey(sc.materi
  if(m&&m!==mode){mode=m;c.mode=m;note('Modalità: '+MODES.find(x=>x.id===m).t)}
  if(extra)for(const x of extra)chat.push({...x,t:Date.now()});saveChat(mat);welcomed[mat]=1;pending=text||'';pend=[];go('prof')}
 $('#mats').addEventListener('click',e=>{const b=e.target.closest('[data-mat]');if(!b||b.dataset.mat===mat)return;stopTalk();setMat(b.dataset.mat);renderProf()});
-$('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b||b.dataset.m===mode)return;mode=b.dataset.m;C(mat).mode=mode;note('Modalità: '+MODES.find(x=>x.id===mode).t);if(mode==='inglese')$('#voiceOn').checked=true;renderProf()});
+const MODE_GO={compiti:'Prof, partiamo con i compiti di oggi: dimmi da dove cominciare.',lezione:'Prof, fammi lezione: spiegami tu l\'argomento come in classe. Se ho dubbi alzo la mano.',studio:'Prof, studiamo insieme: guidami tu passo passo.',spiega:'Prof, spiegami l\'argomento a piccoli pezzi.',inglese:'Hi prof! Let\'s speak English.',interroga:'Prof, interrogami come in classe.'};
+const MODE_PRE={esercizi:'Prof, mi aiuti con questo esercizio? ',riassunto:'Prof, ecco il mio riassunto: '};
+$('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;const same=b.dataset.m===mode;mode=b.dataset.m;C(mat).mode=mode;if(!same)note('Modalità: '+MODES.find(x=>x.id===mode).t);if(mode==='inglese'){$('#voiceOn').checked=true;voiceUI()}renderProf();
+ if(MODE_PRE[mode]){const t=$('#say');t.value=MODE_PRE[mode];t.focus();t.setSelectionRange(t.value.length,t.value.length);toast(mode==='esercizi'?'Scrivi o fotografa l\'esercizio (graffetta), poi invia':'Scrivi o incolla il riassunto, poi invia');return}
+ if(!sample){$('#noAI').hidden=false;return}if(busy){toast('Un attimo: il prof sta finendo di rispondere');return}ask(MODE_GO[mode])});
 $('#profScheda').addEventListener('change',e=>{pId=e.target.value;C(mat).pId=pId;if(pId)note('Argomento: '+(get(pId)?.titolo||''));renderProf()});
 $('#memBtn').addEventListener('click',()=>{const b=$('#memBox');if(!b.hidden){b.hidden=true;return}const m=C(mat).memoria,p=ME().memoria;
  b.innerHTML='<span class="who">Appunti del prof · '+esc(matName(mat))+'</span>'+(m?fmt(m):'<span class="mute">Il prof scrive i suoi appunti dopo qualche scambio di messaggi.</span>')+(p?'<span class="who" style="margin-top:10px">Cose che Adriano gli ha raccontato</span>'+fmt(p):'');b.hidden=false});
@@ -977,10 +985,21 @@ let vz=ls.get('prof-vz',{voice:'rounded',rate:1});$('#vVoice').value=vz.voice;$(
 $('#vVoice').addEventListener('change',e=>{vz.voice=e.target.value;ls.set('prof-vz',vz)});$('#vRate').addEventListener('change',e=>{vz.rate=+e.target.value;ls.set('prof-vz',vz);tts?.setRate?.(vz.rate)});
 $('#vTry').addEventListener('click',()=>speakOut('Ciao Adriano! Sono il tuo prof. Allora, che cosa studiamo oggi?','it'));
 function bestVoice(lang){const pick=ls.get('prof-vname-'+lang,'');if(pick&&'speechSynthesis' in window){const v=speechSynthesis.getVoices().find(x=>x.name===pick);if(v)return v}const V=('speechSynthesis' in window)?speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith(lang)):[];return V.sort((a,b)=>sc(b)-sc(a))[0]||null;function sc(v){return (/premium|enhanced|natural|neural|siri|google/i.test(v.name)?10:0)+(/federica|alice|luca|elsa|diego|paola|serena|daniel|kate|arthur/i.test(v.name)?3:0)+(v.localService?0:1)}}
+let nAud=null,nCtl=null,nOff=0;
+function neuralOn(){return !!window.__aiTts&&ls.get('prof-neural',true)&&Date.now()>nOff}
+async function speakNeural(L){const Q=[];let cur='',lg=L[0].language;for(const l of L){if(l.language!==lg||(cur+' '+l.text).length>700){if(cur)Q.push([cur,lg]);cur='';lg=l.language}cur+=(cur?'\n':'')+l.text}if(cur)Q.push([cur,lg]);
+ const ctl=nCtl=new AbortController();const voice=ls.get('prof-nvoice','cedar');const fetchA=([t,g])=>window.__aiTts(t,{lang:g,voice,signal:ctl.signal}).then(b=>URL.createObjectURL(b));
+ let next=fetchA(Q[0]);$('#stopVoice').hidden=false;
+ for(let i=0;i<Q.length;i++){const url=await next;if(ctl.signal.aborted)return;if(i+1<Q.length)next=fetchA(Q[i+1]);
+  await new Promise((res,rej)=>{const a=nAud=new Audio(url);a.onended=res;a.onerror=()=>rej({code:'play'});a.play().catch(e=>rej({code:e?.name==='NotAllowedError'?'no_gesture':'play'}))});URL.revokeObjectURL(url);if(ctl.signal.aborted)return}
+ $('#stopVoice').hidden=true}
 function speakOut(text,lang){const L=voiceLines(text,lang);if(!L.length)return;
+ if(neuralOn()){shush();speakNeural(L).catch(e=>{if(e?.name==='AbortError')return;$('#stopVoice').hidden=true;if(e?.code==='no_gesture'){toast('Tocca "Ascolta" per sentire il prof');return}nOff=Date.now()+600000;if(e?.code==='credit')toast('Voce naturale: credito OpenAI finito, uso la voce del tablet');speakDevice(L)});return}
+ speakDevice(L)}
+function speakDevice(L){
  if(tts){tts.speak(L,{voice:vz.voice,rate:(mode==='inglese'?0.92:1)*vz.rate}).catch(e=>{if(e?.code==='not_granted'){tts=null;toast('Voce disattivata per questa app')}else if(e?.code==='no_gesture')toast('Tocca "Ascolta" per sentire il prof')});return}
  if('speechSynthesis' in window){const ss=speechSynthesis;if(ss.speaking||ss.pending)ss.cancel();try{ss.resume()}catch(e){}L.forEach(l=>{const u=new SpeechSynthesisUtterance(l.text);u.lang=l.language==='en'?'en-GB':'it-IT';const bv=bestVoice(l.language==='en'?'en':'it');if(bv)u.voice=bv;u.rate=(l.language==='en'?0.92:1)*vz.rate*(+ls.get('prof-vrate',1));u.pitch=+ls.get('prof-vpitch',1);u.onerror=ev=>{if(ev.error!=='interrupted'&&ev.error!=='canceled')toast('La voce non parte: controlla il volume e che il telefono non sia in silenzioso')};u.onstart=()=>$('#stopVoice').hidden=false;u.onend=()=>{if(!speechSynthesis.speaking)$('#stopVoice').hidden=true};speechSynthesis.speak(u)})}}
-function shush(){tts?.stop().catch(()=>{});if('speechSynthesis' in window)speechSynthesis.cancel();$('#stopVoice').hidden=true}
+function shush(){try{nCtl?.abort();nAud?.pause()}catch(e){}nAud=null;tts?.stop().catch(()=>{});if('speechSynthesis' in window)speechSynthesis.cancel();$('#stopVoice').hidden=true}
 $('#stopVoice').addEventListener('click',shush);
 function voiceUI(){const on=$('#voiceOn').checked;$('#voiceSet').hidden=!on||!canSpeak();$('#vVoice').hidden=$('#vVoice').previousElementSibling.hidden=!tts;$('#talk').hidden=!(on&&dict);$('#mic').hidden=!dict;const h=$('#voiceHint');
  h.hidden=!on||!!dict;h.textContent='Per rispondere a voce tocca il microfono della tastiera, parla, poi invia. Il prof ti risponde ad alta voce.';ls.set('prof-voice',on)}
@@ -1125,6 +1144,11 @@ function vzFill(){if(!('speechSynthesis' in window)){$('#vzNote').textContent='Q
  $('#vzRate').value=ls.get('prof-vrate',1);$('#vzPitch').value=ls.get('prof-vpitch',1);
  $('#vzNote').textContent=V.filter(v=>v.lang.toLowerCase().startsWith('it')).length<=1?'Ci sono poche voci: scaricane altre dalle impostazioni del dispositivo (vedi le istruzioni che ti ha dato Claude).':''}
 if('speechSynthesis' in window)speechSynthesis.addEventListener?.('voiceschanged',()=>{if(location.hash==='#impostazioni'&&setOpen)vzFill()});
+$('#nvOn').checked=!!ls.get('prof-neural',true);$('#nvVoice').value=ls.get('prof-nvoice','cedar');
+$('#nvOn').addEventListener('change',e=>{ls.set('prof-neural',e.target.checked);nOff=0});$('#nvVoice').addEventListener('change',e=>{ls.set('prof-nvoice',e.target.value);nOff=0});
+$('#nvTry').addEventListener('click',async()=>{const n=$('#nvNote');if(!window.__aiTts){n.textContent='Non disponibile qui.';return}n.textContent='Preparo la voce…';shush();
+ try{const b=await window.__aiTts('Ciao Adriano! Sono il tuo prof. Allora, che cosa studiamo oggi? Dai, partiamo con calma.',{lang:'it',voice:$('#nvVoice').value});const a=nAud=new Audio(URL.createObjectURL(b));await a.play();n.textContent='Funziona ✓';nOff=0}
+ catch(e){n.textContent=/manca OPENAI|503/.test(e?.message||'')?'Non ancora collegata: manca la chiave OpenAI su Cloudflare.':'Non funziona: '+(e?.message||e?.code||'errore')}});
 $('#vzIt').addEventListener('change',e=>ls.set('prof-vname-it',e.target.value));$('#vzEn').addEventListener('change',e=>ls.set('prof-vname-en',e.target.value));
 $('#vzRate').addEventListener('change',e=>ls.set('prof-vrate',+e.target.value));$('#vzPitch').addEventListener('change',e=>ls.set('prof-vpitch',+e.target.value));
 $('#vzTryIt').addEventListener('click',()=>speakOut('Ciao Adriano! Sono il tuo prof. Oggi ripassiamo insieme, un passo alla volta. Pronto?','it'));

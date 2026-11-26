@@ -60,6 +60,14 @@
 
   // ---------- il prof (Claude, tramite il servizio su Cloudflare) ----------
   const b64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(blob); });
+  // voce naturale (OpenAI, tramite il servizio su Cloudflare): restituisce l'audio mp3
+  window.__aiTts = async (text, o = {}) => {
+    if (!AI || !auth.currentUser) throw { code: "unavailable" };
+    const token = await auth.currentUser.getIdToken();
+    const r = await fetch(AI.replace(/\/$/, "") + "/tts", { method: "POST", signal: o.signal, headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ text, lang: o.lang || "it", voice: o.voice || "" }) });
+    if (!r.ok) throw { code: r.status === 402 ? "credit" : "unavailable", message: "HTTP " + r.status + " · " + (await r.text().catch(() => "")).slice(0, 160) };
+    return await r.blob();
+  };
   async function sample(input, opts = {}) {
     if (!AI) throw { code: "not_granted", message: "Servizio AI non configurato (LEGGIMI, passo 6)." };
     let msgs = typeof input === "string" ? [{ role: "user", content: input }] : input.map(m => ({ role: m.role, content: m.content }));
