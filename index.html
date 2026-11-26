@@ -581,6 +581,7 @@ const PRONTO=['So spiegare l\'argomento senza leggere','Uso frasi complete','So 
 const KWQ=['Che cos\'è?','Chi o che cosa coinvolge?','Dove e quando?','Come funziona o come avviene?','Perché è importante?'];
 const MODES=[
  {id:'compiti',t:'Compiti di oggi',h:'Il prof organizza i compiti in blocchi brevi e ti guida.'},
+ {id:'recupero',t:'Recupera insufficienza',h:'Ripetizioni: il prof riparte dalle basi dove non è andata bene, con esercizi e mini-verifiche finché non sei pronto.'},
  {id:'lezione',t:'Fammi lezione',h:'Il prof spiega come in classe. Alza la mano quando vuoi fare una domanda.'},
  {id:'studio',t:'Studiamo',h:'Il prof ti guida dal paragrafo alla scheda, un passo alla volta.'},
  {id:'spiega',t:'Spiegami',h:'Il prof spiega a piccoli pezzi e controlla che hai capito.'},
@@ -607,6 +608,7 @@ const MODE_TXT={
  esercizi:'MODALITÀ: Esercizi. Se non c\'è un esercizio allegato, chiedigli di fotografarlo. Non dare subito la soluzione: fallo ragionare un passaggio alla volta (dati, che cosa si chiede, regola o formula da usare, calcolo, controllo del risultato). Correggi subito ogni passaggio sbagliato spiegando perché. Dai la soluzione completa solo se l\'ha già tentato davvero, e poi proponigli un esercizio simile da fare da solo.',
  inglese:'MODALITÀ: English speaking practice, conversazione a voce TUTTA IN INGLESE, come con un insegnante madrelingua. Scrivi SOLO in inglese corretto e naturale (livello A2-B1, frasi brevi), massimo 50 parole per turno, chiudi sempre con UNA domanda. Niente parole italiane mescolate all\'inglese. Argomento: quello della scheda o dei materiali se c\'è, altrimenti chiedigli di cosa vuole parlare. Se la sua risposta contiene errori (grammatica, lessico, ordine delle parole, tempi verbali), INIZIA con una riga che comincia esattamente con "Correction:" e scrivi in inglese semplice la frase giusta (es. Correction: we say "I went", not "I goed"). Poi vai a capo e continua la conversazione. Le risposte arrivano dalla dettatura vocale: ignora punteggiatura e maiuscole; se una parola sembra trascritta male, chiedigli in inglese se intendeva quella parola. Usa l\'italiano SOLO se Adriano scrive in italiano o dice che non ha capito: in quel caso metti la spiegazione italiana su una riga a parte che comincia esattamente con "In italiano:", poi torna all\'inglese su una nuova riga.',
  interroga:'MODALITÀ: Interrogazione simulata (livello 5). Domande non preparate, una alla volta, come un professore vero: apri con "Parlami di…", poi definizioni, cause, esempi, collegamenti. Dopo ogni risposta: riscontro breve (cosa va bene, cosa manca, come dirlo meglio), poi la domanda successiva. Dopo 5 domande, o se scrive "basta", chiudi con un bilancio sui 7 punti di "Sono pronto?" e un giudizio indicativo (non un voto ufficiale) con 2 cose da allenare.',
+ recupero:'MODALITÀ: RIPETIZIONI PER RECUPERARE UN\'INSUFFICIENZA, come un bravo insegnante privato. 1) Diagnosi: guarda voti, osservazioni dei professori, errori e programma svolto in classe; se mancano dati chiedi ad Adriano in cosa è andato male; poi fagli 2-3 domande veloci per capire dove sono le lacune vere. 2) Riparti dalle basi che mancano, un concetto alla volta, con esempi semplici. 3) Esercizi graduati dal facile al livello verifica, correggendo subito ogni errore e spiegando il perché. 4) Ogni tanto una mini-verifica di 3-5 domande per misurare i progressi, e diglielo quando migliora. 5) Alla fine di ogni sessione riassumi cosa è stato recuperato e cosa resta, e proponi cosa fare la volta dopo. Se c\'è una verifica o interrogazione di recupero in arrivo, organizza tutto in vista di quella data. Incoraggia sempre: un\'insufficienza si recupera.',
  riassunto:'MODALITÀ: Controllo del riassunto. Usa quello della scheda o chiedigli di incollarlo. Valutalo con il Controllo del riassunto: titolo e ordine logico, frasi complete, termini tecnici, niente ripetizioni, si capisce senza libro. Punti forti e al massimo 3 correzioni; fagli riscrivere lui le parti deboli.'};
 
 /* ---------- archivio ---------- */
@@ -1056,7 +1058,7 @@ const MODE_GO={compiti:'Prof, partiamo con i compiti di oggi: dimmi da dove comi
 const MODE_PRE={esercizi:'Prof, mi aiuti con questo esercizio? ',riassunto:'Prof, ecco il mio riassunto: '};
 $('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;const same=b.dataset.m===mode;mode=b.dataset.m;C(mat).mode=mode;if(!same)note('Modalità: '+MODES.find(x=>x.id===mode).t);if(mode==='inglese'){$('#voiceOn').checked=true;voiceUI()}renderProf();
  if(MODE_PRE[mode]){const t=$('#say');t.value=MODE_PRE[mode];t.focus();t.setSelectionRange(t.value.length,t.value.length);toast(mode==='esercizi'?'Scrivi o fotografa l\'esercizio (graffetta), poi invia':'Scrivi o incolla il riassunto, poi invia');return}
- if(!sample){$('#noAI').hidden=false;return}if(busy){toast('Un attimo: il prof sta finendo di rispondere');return}ask(MODE_GO[mode])});
+ if(!sample){$('#noAI').hidden=false;return}if(busy){toast('Un attimo: il prof sta finendo di rispondere');return}ask(mode==='recupero'?recuperoMsg(mat):MODE_GO[mode])});
 $('#profScheda').addEventListener('change',e=>{pId=e.target.value;C(mat).pId=pId;if(pId)note('Argomento: '+(get(pId)?.titolo||''));renderProf()});
 
 
@@ -1197,8 +1199,10 @@ async function seedProgramma(){if(programma.some(x=>x.seed)||ls.get('prof-seed-p
   for(const a of j.argomenti||[]){const key=(matKey(a.materia)+'|'+a.data+'|'+a.argomento).toLowerCase();if(programma.some(x=>(matKey(x.materia)+'|'+x.data+'|'+x.argomento).toLowerCase()===key))continue;programma.push({...a,added:Date.now()});n++}
   ls.set('prof-seed-prog',1);if(n){savePrProg();if(location.hash==='#lezione')renderProgramma();if(location.hash===''||location.hash==='#prof')drawMatVoti()}}catch(e){}}
 
-function recupero(k){const low=vAll(k).filter(v=>v.n<6||v.label==='—').slice(-6).map(v=>`${v.label} ${v.tipo||''}${v.argomento?' su '+v.argomento:''}${v.note?' ('+v.note+')':''}`);
- openProf(null,'studio',`Prof, ho delle insufficienze in ${matName(k)}${low.length?': '+low.join('; '):''}. Fammi un piano di recupero: guarda i miei voti e gli argomenti fatti in classe, dimmi da dove partire, cosa ripassare ogni giorno e come prepararmi alla prossima verifica. Poi cominciamo dal primo passo.`,null,k)}
+function recuperoMsg(k){if(k==='organizzazione')return 'Prof, guarda i miei voti e il programma svolto e fammi un piano di recupero delle insufficienze: quali materie e argomenti per primi, quanto tempo al giorno, e come arrivo pronto alle prossime verifiche.';
+ const low=vAll(k).filter(v=>v.n<6||v.label==='—').slice(-6).map(v=>`${v.label} ${v.tipo||''}${v.argomento?' su '+v.argomento:''}${v.note?' ('+v.note+')':''}`);
+ return `Prof, voglio recuperare l'insufficienza di ${matName(k)}${low.length?' (voti: '+low.join('; ')+')':''}. Facciamo ripetizioni: capisci dove sono le mie lacune, fammi un piano fino alla prossima verifica e cominciamo dal primo passo.`}
+function recupero(k){openProf(null,'recupero',recuperoMsg(k),null,k)}
 /* ---------- appunti da stampare (quaderno) ---------- */
 let dispense=ls.get('prof-dispense-v1',[]),dCur=null;
 function saveDisp(d){ls.set('prof-dispense-v1',dispense);if(col)col.doc('disp-'+d.id).set(JSON.parse(JSON.stringify(d))).catch(()=>toast('Appunti salvati solo su questo dispositivo'))}
