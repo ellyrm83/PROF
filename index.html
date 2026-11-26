@@ -254,6 +254,8 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
    <div class="row" id="modes" role="group" aria-label="Che cosa facciamo" style="margin-top:10px"></div>
    <p class="hint" id="modeHint"></p>
    <div id="matComp"></div>
+   <div id="matVoti"></div>
+   <div id="tests"></div>
    <label class="f" for="profScheda">Argomento</label>
    <select id="profScheda"></select>
    <div class="row" style="margin-top:12px;justify-content:space-between">
@@ -965,13 +967,13 @@ function renderProf(){
  ps.innerHTML='<option value="">Nessun argomento preciso</option>'+own.sort((a,b)=>b.updated-a.updated).map(x=>`<option value="${esc(x.id)}">${esc(x.titolo||'Senza titolo')}</option>`).join('');
  if(pId&&!own.some(x=>x.id===pId))pId='';ps.value=pId;
  $('#modes').innerHTML=MODES.map(m=>`<button class="chip" data-m="${m.id}" aria-pressed="${m.id===mode}">${m.t}</button>`).join('');
- $('#modeHint').textContent=MODES.find(m=>m.id===mode).h;drawMatComp();drawPath($('#path1'),get(pId));drawFocus();voiceUI();drawPend();$('#memBox').hidden=true;
+ $('#modeHint').textContent=MODES.find(m=>m.id===mode).h;drawMatComp();drawMatVoti();drawTests();drawPath($('#path1'),get(pId));drawFocus();voiceUI();drawPend();$('#memBox').hidden=true;
  drawChat();scrollEnd(true);
  if(!sample||busy)return;
  if(pending){const t=pending;pending='';ask(t);return}
  const last=[...chat].reverse().find(m=>m.role!=='note');
  if(!last)welcome(true);else if(Date.now()-(last.t||0)>3*3600e3&&!welcomed[mat])welcome(false)}
-function welcome(first){welcomed[mat]=1;chat.push({role:'user',hidden:true,t:Date.now(),content:first?`(Adriano apre per la prima volta la chat di ${matName(mat)}. Salutalo con calore, presentati in due frasi e chiedigli che cosa deve studiare o fare oggi in questa materia, tenendo conto dei compiti.)`:`(Adriano torna nella chat di ${matName(mat)} dopo una pausa. Salutalo come farebbe un insegnante che gli vuole bene: se ti ha raccontato qualcosa di sé l'ultima volta (una partita, un'interrogazione…) chiedigli com'è andata; poi ricordagli in una frase dove eravate rimasti e chiedigli se riprendete da lì o se oggi ha altro da fare.)`});talk()}
+function welcome(first){welcomed[mat]=1;const P=pendingFb(mat),U=upcomingTests(mat).filter(c=>dayDiff(c.consegna)<=7);const extra=(P.length?` Prima di tutto chiedigli com'è andata la ${testName(P[0])} del ${P[0].consegna} e se è uscito il voto.`:'')+(U.length?` Ricordagli che ${dayDiff(U[0].consegna)===0?'oggi':dayDiff(U[0].consegna)===1?'domani':'tra '+dayDiff(U[0].consegna)+' giorni'} ha la ${testName(U[0])} e proponigli di prepararla insieme.`:'');chat.push({role:'user',hidden:true,t:Date.now(),content:(first?`(Adriano apre per la prima volta la chat di ${matName(mat)}. Salutalo con calore, presentati in due frasi e chiedigli che cosa deve studiare o fare oggi in questa materia, tenendo conto dei compiti.)`:`(Adriano torna nella chat di ${matName(mat)} dopo una pausa. Salutalo come farebbe un insegnante che gli vuole bene: se ti ha raccontato qualcosa di sé l'ultima volta (una partita, un'interrogazione…) chiedigli com'è andata; poi ricordagli in una frase dove eravate rimasti e chiedigli se riprendete da lì o se oggi ha altro da fare.)`)+(extra?' (Indicazioni dell\'app:'+extra+')':'')});talk()}
 const canSpeak=()=>!!tts||('speechSynthesis' in window);
 const dayLbl=t=>new Date(t).toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
 function drawChat(live){let html='';
@@ -1013,6 +1015,7 @@ ${altri.length?'Altri argomenti di questa materia già nelle sue schede: '+altri
 ${booksTxt(get(pId)||(mat!=='organizzazione'?{materia:matName(mat)}:null))}
 ${lezTxt()}
 ${compitiTxt()}
+${verificheTxt(mat)}
 ${votiTxt(mat)}
 ${programmaTxt(mat)}`}
 async function talkImages(){const s=get(pId),c=C(mat);c.sent=c.sent||[];const last=chat[chat.length-1];const ims=last?.role==='user'&&last.imgs?[...last.imgs]:[];
@@ -1035,9 +1038,10 @@ async function updMemory(k){const c=C(k);const n=c.messages.length;if(!sample||n
 Appunti di materia attuali:\n<<<${c.memoria||'(vuoti)'}>>>
 Appunti personali attuali (cose che Adriano ha raccontato di sé):\n<<<${ME().memoria||'(vuoti)'}>>>
 Conversazione recente:\n<<<${recent}>>>
-Rispondi SOLO con JSON: {"materia":"appunti completi per ${matName(k)}, max 180 parole, elenco con - : argomenti affrontati e a che punto è, cosa ha capito bene, errori ricorrenti, cosa ripassare, prossimo passo concordato","personale":"appunti personali completi, max 120 parole, elenco con - : interessi, passioni, impegni in arrivo (partite, verifiche), cosa lo motiva o lo annoia, modi di dire o battute che usa, preferenze su come studiare"}
+Rispondi SOLO con JSON: {"materia":"appunti completi per ${matName(k)}, max 180 parole, elenco con - : argomenti affrontati e a che punto è, cosa ha capito bene, errori ricorrenti, cosa ripassare, prossimo passo concordato","personale":"appunti personali completi, max 120 parole, elenco con - : interessi, passioni, impegni in arrivo (partite, verifiche), cosa lo motiva o lo annoia, modi di dire o battute che usa, preferenze su come studiare","voti_detti":[{"voto":"6+","tipo":"scritto|orale","argomento":"…","com_e_andata":"…"}]}
+In "voti_detti" metti SOLO i voti che Adriano ha detto esplicitamente di aver preso in questa conversazione in ${matName(k)} (altrimenti lista vuota).
 Regole: solo fatti detti da lui o emersi dallo studio; niente giudizi sulla persona; non annotare mai informazioni su salute, diagnosi, famiglia privata o altre cose delicate; mantieni quello che negli appunti attuali serve ancora.`;
- try{const r=await ai(pr,{quick:true});const j=parseJSON(r.text);if(j?.materia){c.memoria=String(j.materia).slice(0,2500);saveChat(k)}if(j?.personale){ME().memoria=String(j.personale).slice(0,1800);saveChat('_adriano')}}catch(e){c.memAt=Math.max(0,n-8)}}
+ try{const r=await ai(pr,{quick:true});const j=parseJSON(r.text);if(j?.materia){c.memoria=String(j.materia).slice(0,2500);saveChat(k)}if(j?.personale){ME().memoria=String(j.personale).slice(0,1800);saveChat('_adriano')}if(Array.isArray(j?.voti_detti)&&k!=='organizzazione')for(const v of j.voti_detti){const lab=String(v.voto||'').trim(),num=vNum(lab);if(isNaN(num))continue;if(voti.some(x=>matKey(x.materia)===k&&x.label===lab&&Date.now()-(x.added||0)<10*864e5))continue;const pc=pendingFb(k)[0];voti.push({id:'v'+uid(),materia:matName(k),data:pc?.consegna||today(),label:lab,n:num,tipo:String(v.tipo||(pc&&/interrog/i.test(pc.testo)?'orale':'scritto')),argomento:String(v.argomento||pc?.argomento||pc?.testo||''),note:String(v.com_e_andata||''),errori:'',peso:1,from:'chat',compitoId:pc?.id||'',added:Date.now()});if(pc){pc.fb=true;saveCompiti()}saveVoti()}}catch(e){c.memAt=Math.max(0,n-8)}}
 function ask(t,imgs){chat.push({role:'user',content:t,imgs:imgs?.length?imgs:undefined,t:Date.now()});saveChat(mat);drawChat();scrollEnd();talk()}
 const scrollEnd=now=>window.scrollTo({top:document.body.scrollHeight,behavior:now?'auto':'smooth'});
 function note(t){chat.push({role:'note',content:t,t:Date.now()});saveChat(mat)}
@@ -1062,6 +1066,7 @@ const VOTI_L=['2','3','3½','4-','4','4+','4½','5-','5','5+','5½','6-','6','6+
 const vNum=l=>{l=String(l).replace(',','.').replace('½','.5').replace(/\s/g,'');const m=l.match(/^(\d+(?:\.\d+)?)([+-]?)$/);if(!m)return NaN;return +m[1]+(m[2]==='+'?.25:m[2]==='-'?-.25:0)};
 const vCls=(n,goal=6)=>n<6?'lo':n<Math.max(6.5,goal)?'mid':'hi';
 function saveVoti(){ls.set('prof-voti-v1',voti);ls.set('prof-voti-mat',vPerMat);if(vcol){const body={kind:'voti',items:JSON.parse(JSON.stringify(voti.slice(-300))),perMat:JSON.parse(JSON.stringify(vPerMat))};vChain=vChain.then(()=>vcol.set(body)).catch(()=>{})}}
+function vAll(k){return voti.filter(v=>matKey(v.materia)===k).sort((a,b)=>(a.data||'').localeCompare(b.data||''))}
 function vSet(k){return vPerMat[k]=vPerMat[k]||{obiettivo:7,priorita:'normale',nota:''}}
 function vStats(k){const L=voti.filter(v=>matKey(v.materia)===k&&!isNaN(v.n)).sort((a,b)=>(a.data||'').localeCompare(b.data||''));
  const w=L.reduce((t,v)=>t+(v.peso||1),0),m=w?L.reduce((t,v)=>t+v.n*(v.peso||1),0)/w:NaN;const last=L.slice(-3),prev=L.slice(-6,-3);
@@ -1070,18 +1075,19 @@ function vScore(k){const st=vStats(k),S=vSet(k);if(!st.L.length)return -1;let sc
  const lastV=st.L[st.L.length-1];if(lastV&&lastV.n<6)sc+=2;return sc}
 function votiTxt(k){const keys=k&&k!=='organizzazione'?[k]:[...new Set(voti.map(v=>matKey(v.materia)))];if(!voti.length&&!Object.keys(vPerMat).length)return '';
  let t='VOTI DI ADRIANO (servono a capire dove puntare il ripasso; non giudicarlo per i voti: incoraggia e lavora sui punti deboli):\n';
- for(const m of keys.sort((a,b)=>vScore(b)-vScore(a))){const st=vStats(m),S=vSet(m);if(!st.L.length&&S.priorita==='normale'&&!S.nota)continue;
-  t+=`\n# ${matName(m)}: media ${isNaN(st.m)?'—':st.m.toFixed(2)}, obiettivo ${S.obiettivo}, priorità di ripasso decisa dalla mamma: ${S.priorita}${st.tr>0.4?', in miglioramento':st.tr<-0.4?', in calo':''}${S.nota?'. Indicazioni della mamma: '+S.nota:''}\n`+st.L.slice(-8).map(v=>`- ${v.data||'?'} ${v.tipo||''} ${v.label}${v.argomento?' su '+v.argomento:''}${v.note?'. Com\'è andata: '+v.note:''}${v.errori?'. Errori nella verifica: '+v.errori:''}`).join('\n')}
+ for(const m of keys.sort((a,b)=>vScore(b)-vScore(a))){const st=vStats(m),S=vSet(m);if(!vAll(m).length&&S.priorita==='normale'&&!S.nota)continue;
+  t+=`\n# ${matName(m)}: media ${isNaN(st.m)?'—':st.m.toFixed(2)}, obiettivo ${S.obiettivo}, priorità di ripasso decisa dalla mamma: ${S.priorita}${st.tr>0.4?', in miglioramento':st.tr<-0.4?', in calo':''}${S.nota?'. Indicazioni della mamma: '+S.nota:''}\n`+vAll(m).slice(-10).map(v=>`- ${v.data||'?'} ${v.tipo||''} ${v.label==='—'?'(osservazione senza voto)':v.label}${v.argomento?' su '+v.argomento:''}${v.note?'. Com\'è andata: '+v.note:''}${v.errori?'. Errori nella verifica: '+v.errori:''}`).join('\n')}
  return t+'\nCOME USARLI: dai la precedenza agli argomenti con voti sotto 6 o sotto l\'obiettivo, agli errori ricorrenti e alle materie con priorità alta; quando un argomento è collegato a un voto basso, ripassalo con più esercizi e domande; se un voto è migliorato, faglielo notare.'}
 function vOptions(){$('#vVal').innerHTML=VOTI_L.map(l=>`<option ${l==='6'?'selected':''}>${l}</option>`).join('')}
 async function readVoti(files){const st=$('#vStatus');if(!sample){$('#noAI').hidden=false;st.textContent='Il prof non è attivo: puoi aggiungere i voti a mano qui sotto.';return}
  st.textContent='Preparo le immagini…';const imgs=await filesToImages(files,6);if(!imgs.length){st.textContent='';return}
  const pr=`Queste immagini sono screenshot dei VOTI dal registro elettronico Axios di uno studente di prima liceo scientifico. Oggi è ${today()}.
 Estrai OGNI voto. Rispondi SOLO con JSON valido: {"voti":[{"materia":"Matematica","data":"YYYY-MM-DD","voto":"6+","tipo":"scritto|orale|pratico|test","argomento":"argomento o descrizione se c'è, altrimenti vuoto","commento":"commento del docente se c'è"}]}
-Regole: copia il voto come scritto (6, 6+, 6-, 6½, 7/8 diventa "7½"). Non inventare voti. Se l'anno manca, usa l'anno scolastico in corso.`;
+Regole: copia il voto come scritto (6, 6+, 6-, 6½, 4,5, 7/8 diventa "7½"). Non inventare voti. Se l'anno manca, usa l'anno scolastico in corso. Copia nel commento le "Osservazioni" del docente (salta "Nessun commento al voto"). Se una riga non ha voto ma ha un'osservazione (es. impreparato, compito senza valutazione), mettila con "voto":"" e il commento.`;
  try{const L=[];for(let i=0;i<imgs.length;i+=8){st.textContent=`Il prof sta leggendo i voti… ${imgs.length>8?Math.min(i+8,imgs.length)+' di '+imgs.length:''}`;const r=await ai(pr,{images:imgs.slice(i,i+8).map(x=>x.blob),complex:true});L.push(...(parseJSON(r.text)?.voti||[]))}let n=0;
-  for(const v of L){const lab=String(v.voto||'').trim(),num=vNum(lab);if(isNaN(num))continue;const key=(v.materia+'|'+v.data+'|'+lab+'|'+v.tipo).toLowerCase();
+  for(const v of L){let lab=String(v.voto||'').trim();const num=vNum(lab);if(isNaN(num)){if(!v.commento)continue;lab='—'}if(/nessun commento/i.test(v.commento||''))v.commento='';const key=(v.materia+'|'+v.data+'|'+lab+'|'+v.tipo).toLowerCase();
    if(voti.some(x=>(x.materia+'|'+x.data+'|'+x.label+'|'+x.tipo).toLowerCase()===key))continue;
+   const dup=voti.find(x=>x.from&&matKey(x.materia)===matKey(v.materia)&&vNum(x.label)===num&&Math.abs(new Date((x.data||today())+'T12:00')-new Date((v.data||today())+'T12:00'))<8*864e5);if(dup){if(v.commento&&!/nessun commento/i.test(v.commento))dup.note=[dup.note,'Prof: '+v.commento].filter(Boolean).join('. ');dup.from='';continue}
    voti.push({id:'v'+uid(),materia:String(v.materia||''),data:/^\d{4}-\d{2}-\d{2}$/.test(v.data)?v.data:'',label:lab,n:num,tipo:String(v.tipo||''),argomento:String(v.argomento||''),note:String(v.commento||''),errori:'',peso:1,added:Date.now()});n++}
   saveVoti();st.textContent=n?`Ho aggiunto ${n} voti. Aggiungi l'argomento e com'è andata: così il prof sa cosa ripassare.`:L.length?'Questi voti c\'erano già.':'Non ho trovato voti: prova con uno screenshot più nitido.';renderVoti()}
  catch(e){st.textContent=aiErr(e)}}
@@ -1109,7 +1115,7 @@ function renderVoti(){vOptions();if(!$('#vDate').value)$('#vDate').value=today()
   <div class="row" style="gap:10px;margin-top:8px"><label class="hint">Obiettivo <select data-vgoal="${k}" style="width:auto">${[6,6.5,7,7.5,8,8.5,9,9.5,10].map(x=>`<option ${x==S.obiettivo?'selected':''}>${x}</option>`).join('')}</select></label>
   <label class="hint">Priorità di ripasso <select data-vprio="${k}" style="width:auto"><option value="alta" ${S.priorita==='alta'?'selected':''}>Alta</option><option value="normale" ${S.priorita==='normale'?'selected':''}>Normale</option><option value="bassa" ${S.priorita==='bassa'?'selected':''}>Bassa</option></select></label></div>
   <label class="hint" style="display:block;margin-top:6px">Indicazioni per il prof su questa materia<input type="text" data-vnota="${k}" value="${esc(S.nota)}" placeholder="es. insisti sul lessico; all'orale si blocca, fallo esporre spesso"></label>
-  ${st.L.slice().reverse().map(v=>`<div class="vrow"><span class="vchip ${vCls(v.n,S.obiettivo)}">${esc(v.label)}</span><div class="tx"><b>${esc(v.tipo||'voto')}</b> <span class="mute">${v.data?new Date(v.data+'T12:00').toLocaleDateString('it-IT',{day:'numeric',month:'short'}):''}</span>
+  ${vAll(k).reverse().map(v=>`<div class="vrow"><span class="vchip ${isNaN(v.n)?'':vCls(v.n,S.obiettivo)}">${esc(v.label)}</span><div class="tx"><b>${esc(v.tipo||'voto')}</b> <span class="mute">${v.data?new Date(v.data+'T12:00').toLocaleDateString('it-IT',{day:'numeric',month:'short'}):''}</span>
    <input type="text" data-varg="${v.id}" value="${esc(v.argomento)}" placeholder="Argomento" style="margin-top:4px"><input type="text" data-vnote="${v.id}" value="${esc(v.note)}" placeholder="Com'è andata?" style="margin-top:4px">
    ${v.errori?`<p class="hint" style="margin:4px 0">Dalla verifica: ${esc(v.errori)}</p>`:''}
    <div class="row" style="margin-top:4px"><label class="hint">Peso <select data-vpeso="${v.id}" style="width:auto">${[0.5,1,2].map(x=>`<option value="${x}" ${x==(v.peso||1)?'selected':''}>${x===0.5?'metà':x===2?'doppio':'normale'}</option>`).join('')}</select></label><button class="btn sm" data-vver="${v.id}">Foto della verifica</button><button class="btn sm red" data-vdel="${v.id}">Togli</button></div></div></div>`).join('')}
@@ -1150,6 +1156,38 @@ function renderProgramma(){if(!$('#pDate').value)$('#pDate').value=today();const
 $('#pShot').addEventListener('change',e=>{readProgramma([...e.target.files]);e.target.value=''});
 $('#pAdd').addEventListener('click',()=>{const a=$('#pArg').value.trim(),m=$('#pMat').value.trim();if(!a||!m){toast('Scrivi materia e argomento');return}programma.push({id:'p'+uid(),materia:m,data:$('#pDate').value||today(),argomento:a,added:Date.now()});savePrProg();$('#pArg').value='';toast('Argomento aggiunto');renderProgramma()});
 $('#pList').addEventListener('click',e=>{const x=e.target.closest('[data-pdel]');if(!x)return;if(x.dataset.c!=='1'){x.dataset.c='1';x.textContent='Sicuro?';return}programma=programma.filter(y=>y.id!==x.dataset.pdel);savePrProg();renderProgramma()});
+
+/* ---------- verifiche: preparazione e feedback sul voto ---------- */
+const isTest=c=>/verific|interrog|compito in classe|test|prova scritta|prova orale/i.test((c.tipo||'')+' '+(c.testo||''));
+function testsFor(k){return compiti.filter(c=>isTest(c)&&c.consegna&&(!k||k==='organizzazione'||matKey(c.materia)===k))}
+const testName=c=>(/interrog/i.test(c.tipo+' '+c.testo)?'interrogazione':'verifica')+' di '+matName(matKey(c.materia));
+function upcomingTests(k){return testsFor(k).filter(c=>{const n=dayDiff(c.consegna);return n>=0&&n<=14}).sort((a,b)=>a.consegna.localeCompare(b.consegna))}
+function pendingFb(k){return testsFor(k).filter(c=>{const n=dayDiff(c.consegna);return n<0&&n>=-30&&!c.fb&&!(c.fbLater>Date.now())}).sort((a,b)=>a.consegna.localeCompare(b.consegna))}
+function verificheTxt(k){const U=upcomingTests(k),P=pendingFb(k);if(!U.length&&!P.length)return '';let t='';
+ if(U.length)t+='VERIFICHE E INTERROGAZIONI IN ARRIVO:\n'+U.map(c=>`- ${c.consegna} (${dayDiff(c.consegna)===0?'oggi':dayDiff(c.consegna)===1?'domani':'tra '+dayDiff(c.consegna)+' giorni'}): ${testName(c)}: ${c.testo}`).join('\n')+'\nPREPARALO TU: quando è la materia giusta, proponi subito di prepararla. Fai un piano a ritroso fino al giorno della prova (cosa ripassare ogni giorno, a blocchi brevi), parti dagli argomenti con voti bassi e dagli errori già fatti, fai esercizi tipo verifica, e il giorno prima una simulazione vera (domande come quelle della prof, con tempo). Per le interrogazioni allenalo a esporre con le sei mosse.\n';
+ if(P.length)t+='VERIFICHE GIÀ FATTE DI CUI NON SAI ANCORA COM\'È ANDATA:\n'+P.map(c=>`- ${c.consegna}: ${testName(c)}: ${c.testo}`).join('\n')+'\nAll\'inizio della conversazione chiedigli con calma com\'è andata, cosa gli è sembrato facile e cosa difficile, e se è già uscito il voto. Qualunque sia il voto, niente prediche: capite insieme cosa ripassare.\n';
+ return t}
+const fbOpts=()=>'<option value="">Voto…</option><option value="nonuscito">Non è ancora uscito</option>'+VOTI_L.map(l=>`<option>${l}</option>`).join('');
+function drawTests(){const el=$('#tests');if(!el)return;const U=upcomingTests(mat).slice(0,3),P=pendingFb(mat).slice(0,3);
+ el.innerHTML=P.map(c=>`<div class="card note" style="margin-top:10px"><h3 style="margin:0 0 4px">Com'è andata la ${esc(testName(c))}?</h3><p class="hint" style="margin:0 0 6px">${esc(new Date(c.consegna+'T12:00').toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'}))} · ${esc(c.testo)}</p>
+  <div class="row" style="gap:8px"><select data-fbv="${c.id}" style="width:auto">${fbOpts()}</select><input type="text" data-fbn="${c.id}" placeholder="Com'è andata? Cosa era facile, cosa difficile" style="flex:1 1 200px"></div>
+  <div class="row" style="margin-top:6px"><button class="btn sm hi" data-fbsave="${c.id}">Salva</button><button class="btn sm" data-fbtalk="${c.id}">Ne parlo col prof</button><button class="btn sm" data-fbskip="${c.id}">Non l'ho fatta</button></div></div>`).join('')
+ +U.map(c=>{const n=dayDiff(c.consegna);return `<div class="card" style="margin-top:10px;border-color:var(--hi)"><div class="row" style="justify-content:space-between"><span><b>${esc(testName(c)).replace(/^./,x=>x.toUpperCase())}</b> <span class="due today">${n===0?'oggi':n===1?'domani':'tra '+n+' giorni'}</span><br><span class="hint">${esc(c.testo)}</span></span><button class="btn sm hi" data-prep="${c.id}">Preparami</button></div></div>`}).join('')}
+function saveFb(c,label,note){if(label==='nonuscito'){c.fbLater=Date.now()+3*864e5;c.fbNote=note||c.fbNote||'';saveCompiti();toast('Va bene: te lo richiedo tra qualche giorno');return}
+ const n=vNum(label);voti.push({id:'v'+uid(),materia:matName(matKey(c.materia)),data:c.consegna,label,n,tipo:/interrog/i.test(c.tipo+' '+c.testo)?'orale':'scritto',argomento:c.argomento||c.testo,note:note||c.fbNote||'',errori:'',peso:1,from:'feedback',compitoId:c.id,added:Date.now()});
+ c.fb=true;saveVoti();saveCompiti();toast(n>=6?'Voto salvato. Bravo!':'Voto salvato: il prof lo userà per aiutarti a recuperare')}
+$('#tests').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=b.dataset,id=d.fbsave||d.fbtalk||d.fbskip||d.prep;const c=compiti.find(x=>x.id===id);if(!c)return;
+ if(d.fbsave){const v=$(`[data-fbv="${id}"]`).value,nt=$(`[data-fbn="${id}"]`).value.trim();if(!v){toast('Scegli il voto, oppure "Non è ancora uscito"');return}saveFb(c,v,nt);drawTests();drawMatVoti()}
+ else if(d.fbskip){c.fb=true;saveCompiti();drawTests()}
+ else if(d.fbtalk){openProf(null,'studio',`Prof, ti racconto com'è andata la ${testName(c)} di ${new Date(c.consegna+'T12:00').toLocaleDateString('it-IT',{weekday:'long'})}.`,null,matKey(c.materia))}
+ else if(d.prep){openProf(schedaFor(c),/interrog/i.test(c.tipo+' '+c.testo)?'interroga':'studio',`Prof, ${dayDiff(c.consegna)===0?'oggi':dayDiff(c.consegna)===1?'domani':'il '+new Date(c.consegna+'T12:00').toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'})} ho la ${testName(c)}: ${c.testo}. Preparami tu: fammi un piano fino a quel giorno e alla fine una simulazione.`,null,matKey(c.materia))}});
+
+function drawMatVoti(){const el=$('#matVoti');if(!el)return;if(mat==='organizzazione'){el.innerHTML='';return}const st=vStats(mat),S=vSet(mat),A=vAll(mat);
+ el.innerHTML=`<div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><h3 style="margin:0">I miei voti di ${esc(matName(mat))}</h3><span class="row">${A.length?`<span class="hint">media</span><span class="vchip ${isNaN(st.m)?'':vCls(st.m,S.obiettivo)}">${isNaN(st.m)?'—':st.m.toFixed(1)}</span>`:''}<a class="btn sm" href="#voti">Tutti</a></span></div>
+  <div class="row" style="gap:6px;margin-top:8px">${A.length?A.slice(-8).map(v=>`<span class="vchip ${isNaN(v.n)?'':vCls(v.n,S.obiettivo)}" title="${esc((v.data||'')+' '+(v.tipo||'')+' '+(v.argomento||'')+' '+(v.note||''))}">${esc(v.label)}</span>`).join(''):'<span class="mute">Ancora nessun voto in questa materia.</span>'}</div>
+  <details style="margin-top:8px"><summary>Aggiungi un voto</summary><div class="row" style="gap:8px;margin-top:6px"><select id="mvVal" style="width:auto">${VOTI_L.map(l=>`<option ${l==='6'?'selected':''}>${l}</option>`).join('')}</select><select id="mvTipo" style="width:auto"><option value="scritto">Scritto</option><option value="orale">Orale</option><option value="pratico">Pratico</option><option value="test">Test</option></select><input type="date" id="mvDate" value="${today()}" style="width:auto"></div>
+  <input type="text" id="mvArg" placeholder="Argomento" style="margin-top:6px"><input type="text" id="mvNote" placeholder="Com'è andata?" style="margin-top:6px"><div class="row" style="margin-top:6px"><button class="btn sm hi" id="mvSave">Salva il voto</button></div></details></div>`}
+$('#matVoti').addEventListener('click',e=>{if(e.target.id!=='mvSave')return;const lab=$('#mvVal').value;voti.push({id:'v'+uid(),materia:matName(mat),data:$('#mvDate').value||today(),label:lab,n:vNum(lab),tipo:$('#mvTipo').value,argomento:$('#mvArg').value.trim(),note:$('#mvNote').value.trim(),errori:'',peso:1,from:'mano',added:Date.now()});saveVoti();toast('Voto salvato: il prof ne terrà conto');drawMatVoti()});
 /* ---------- appunti da stampare (quaderno) ---------- */
 let dispense=ls.get('prof-dispense-v1',[]),dCur=null;
 function saveDisp(d){ls.set('prof-dispense-v1',dispense);if(col)col.doc('disp-'+d.id).set(JSON.parse(JSON.stringify(d))).catch(()=>toast('Appunti salvati solo su questo dispositivo'))}
