@@ -8,4 +8,4 @@ window.PROF_FIREBASE = {
   appId: "1:162879780299:web:6684150a1d3fb9ce40724e"
 };
 // Indirizzo del servizio AI su Cloudflare (LEGGIMI, passo 6). La chiave di Anthropic NON va mai qui.
-window.PROF_AI = { url: "" };
+window.PROF_AI = { url: "https://prof.e-piersantelli.workers.dev" };
