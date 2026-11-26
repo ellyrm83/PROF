@@ -1,0 +1,1077 @@
+{
+"versione": 1,
+"fonte": "Registro Axios, video del 26/11/2026",
+"argomenti": [
+{
+"id": "ps000",
+"materia": "Scienze naturali",
+"data": "2026-09-14",
+"argomento": "Presentazione del corso",
+"seed": 1
+},
+{
+"id": "ps001",
+"materia": "Educazione civica",
+"data": "2026-09-14",
+"argomento": "Illustrazione del regolamento d'istituto (con particolare attenzione all'uso del cellulare)",
+"seed": 1
+},
+{
+"id": "ps002",
+"materia": "Fisica",
+"data": "2026-09-15",
+"argomento": "Definizione degli aggettivi verbale, qualitativo, quantitativo; etimologia della parola fisica",
+"seed": 1
+},
+{
+"id": "ps003",
+"materia": "Latino",
+"data": "2026-09-15",
+"argomento": "Introduzione alla materia: fonemi e grafemi",
+"seed": 1
+},
+{
+"id": "ps004",
+"materia": "Matematica",
+"data": "2026-09-15",
+"argomento": "Conoscenza della classe, presentazione delle prossime attività e del programma",
+"seed": 1
+},
+{
+"id": "ps005",
+"materia": "Latino",
+"data": "2026-09-16",
+"argomento": "L'alfabeto latino: consonanti e vocali",
+"seed": 1
+},
+{
+"id": "ps006",
+"materia": "Matematica",
+"data": "2026-09-16",
+"argomento": "Numeri naturali: definizioni, operazioni, rappresentazione su retta orientata, espressioni",
+"seed": 1
+},
+{
+"id": "ps007",
+"materia": "Fisica",
+"data": "2026-09-17",
+"argomento": "Tre esperimenti di caduta libro-foglio e descrizione dei tre fenomeni (vedi quaderno); iniziato a definire il metodo scientifico",
+"seed": 1
+},
+{
+"id": "ps008",
+"materia": "Matematica",
+"data": "2026-09-17",
+"argomento": "Potenze: proprietà delle potenze, espressioni",
+"seed": 1
+},
+{
+"id": "ps009",
+"materia": "Storia e geografia",
+"data": "2026-09-17",
+"argomento": "Metodo e strumenti della storia",
+"seed": 1
+},
+{
+"id": "ps010",
+"materia": "Disegno e storia dell'arte",
+"data": "2026-09-18",
+"argomento": "Presentazione della disciplina e del programma da svolgere",
+"seed": 1
+},
+{
+"id": "ps011",
+"materia": "Latino",
+"data": "2026-09-18",
+"argomento": "I dittonghi e la pronuncia del latino",
+"seed": 1
+},
+{
+"id": "ps012",
+"materia": "Matematica",
+"data": "2026-09-18",
+"argomento": "Proprietà delle operazioni in N; proprietà delle potenze in casi particolari",
+"seed": 1
+},
+{
+"id": "ps013",
+"materia": "Scienze naturali",
+"data": "2026-09-21",
+"argomento": "Metodo scientifico, unità di misura",
+"seed": 1
+},
+{
+"id": "ps014",
+"materia": "Fisica",
+"data": "2026-09-22",
+"argomento": "Lette le relazioni fatte a casa, spiegata una relazione scientifica",
+"seed": 1
+},
+{
+"id": "ps015",
+"materia": "Latino",
+"data": "2026-09-22",
+"argomento": "Le sillabe e l'accento",
+"seed": 1
+},
+{
+"id": "ps016",
+"materia": "Scienze naturali",
+"data": "2026-09-22",
+"argomento": "Grandezze intensive ed estensive",
+"seed": 1
+},
+{
+"id": "ps017",
+"materia": "Matematica",
+"data": "2026-09-23",
+"argomento": "Correzione esercizi e ripasso: multipli e divisori, MCD e mcm; traduzione dalle parole ai simboli",
+"seed": 1
+},
+{
+"id": "ps018",
+"materia": "Italiano",
+"data": "2026-09-23",
+"argomento": "Analisi logica: soggetto del verbo attivo e passivo, complemento d'agente; analisi grammaticale: articolo determinativo e indeterminativo, articolo partitivo",
+"seed": 1
+},
+{
+"id": "ps019",
+"materia": "Scienze motorie",
+"data": "2026-09-23",
+"argomento": "Attività pratica in palestra: riscaldamento, esercizi di mobilità e allungamento, esercitazione di basket",
+"seed": 1
+},
+{
+"id": "ps020",
+"materia": "Storia e geografia",
+"data": "2026-09-23",
+"argomento": "Le fonti storiche",
+"seed": 1
+},
+{
+"id": "ps021",
+"materia": "Fisica",
+"data": "2026-09-24",
+"argomento": "Riesaminata l'esperienza; introdotti l'errore dello strumento e l'errore casuale",
+"seed": 1
+},
+{
+"id": "ps022",
+"materia": "Latino",
+"data": "2026-09-24",
+"argomento": "La prima declinazione",
+"seed": 1
+},
+{
+"id": "ps023",
+"materia": "Storia e geografia",
+"data": "2026-09-24",
+"argomento": "La nascita della specie umana",
+"seed": 1
+},
+{
+"id": "ps024",
+"materia": "Matematica",
+"data": "2026-09-25",
+"argomento": "Correzione esercizi: i numeri interi (definizione, rappresentazione su retta orientata, valore assoluto, operazioni in Z: addizione, sottrazione, moltiplicazione)",
+"seed": 1
+},
+{
+"id": "ps025",
+"materia": "Matematica",
+"data": "2026-09-25",
+"argomento": "Test d'ingresso di matematica e fisica",
+"seed": 1
+},
+{
+"id": "ps026",
+"materia": "Storia e geografia",
+"data": "2026-09-25",
+"argomento": "La preistoria",
+"seed": 1
+},
+{
+"id": "ps027",
+"materia": "Italiano",
+"data": "2026-09-28",
+"argomento": "Grammatica, correzione esercizi per casa; epica, Bibbia, letture e commento; scrittura di un mito in classe",
+"seed": 1
+},
+{
+"id": "ps028",
+"materia": "Scienze naturali",
+"data": "2026-09-28",
+"argomento": "Grandezze estensive e intensive",
+"seed": 1
+},
+{
+"id": "ps029",
+"materia": "Latino",
+"data": "2026-09-29",
+"argomento": "Esercizi sulla prima declinazione",
+"seed": 1
+},
+{
+"id": "ps030",
+"materia": "Scienze naturali",
+"data": "2026-09-29",
+"argomento": "Scale di misura, misure precise e accurate",
+"seed": 1
+},
+{
+"id": "ps031",
+"materia": "Scienze motorie",
+"data": "2026-09-30",
+"argomento": "Apparato scheletrico: classificazione delle ossa, funzioni, la colonna vertebrale e le patologie correlate",
+"seed": 1
+},
+{
+"id": "ps032",
+"materia": "Scienze motorie",
+"data": "2026-09-30",
+"argomento": "Attività pratica: riscaldamento, esercitazione con la palla, fondamentali di pallavolo",
+"seed": 1
+},
+{
+"id": "ps033",
+"materia": "Storia e geografia",
+"data": "2026-09-30",
+"argomento": "Questionario di ripasso sugli argomenti trattati",
+"seed": 1
+},
+{
+"id": "ps034",
+"materia": "Latino",
+"data": "2026-10-01",
+"argomento": "La traduzione delle parole latine",
+"seed": 1
+},
+{
+"id": "ps035",
+"materia": "Italiano",
+"data": "2026-10-01",
+"argomento": "Il nome; fondamenti di analisi logica",
+"seed": 1
+},
+{
+"id": "ps036",
+"materia": "Italiano",
+"data": "2026-10-02",
+"argomento": "Presentazione del romanzo \"Cuore di cane\" di Bulgakov: contesto storico, la rivoluzione russa, cenni biografici sull'autore",
+"seed": 1
+},
+{
+"id": "ps037",
+"materia": "Matematica",
+"data": "2026-10-02",
+"argomento": "Correzione esercizi e ripasso: divisione, potenze e proprietà delle potenze in Z",
+"seed": 1
+},
+{
+"id": "ps038",
+"materia": "Storia e geografia",
+"data": "2026-10-02",
+"argomento": "Paleolitico e Neolitico",
+"seed": 1
+},
+{
+"id": "ps039",
+"materia": "Disegno e storia dell'arte",
+"data": "2026-10-05",
+"argomento": "Le antiche civiltà; indicazioni per la Tavola 1",
+"seed": 1
+},
+{
+"id": "ps040",
+"materia": "Matematica",
+"data": "2026-10-05",
+"argomento": "Correzione esercizi e ripasso: potenze con il segno dentro o fuori dalle parentesi",
+"seed": 1
+},
+{
+"id": "ps041",
+"materia": "Fisica",
+"data": "2026-10-06",
+"argomento": "Grandezze scalari e vettoriali, grandezze dirette e indirette",
+"seed": 1
+},
+{
+"id": "ps042",
+"materia": "Latino",
+"data": "2026-10-06",
+"argomento": "Il verbo: coniugazioni e paradigma verbale; presente indicativo attivo",
+"seed": 1
+},
+{
+"id": "ps043",
+"materia": "Scienze naturali",
+"data": "2026-10-06",
+"argomento": "Il sistema",
+"seed": 1
+},
+{
+"id": "ps044",
+"materia": "Storia e geografia",
+"data": "2026-10-06",
+"argomento": "L'età dei metalli; la Mesopotamia",
+"seed": 1
+},
+{
+"id": "ps045",
+"materia": "Latino",
+"data": "2026-10-07",
+"argomento": "Esercizi sui verbi latini",
+"seed": 1
+},
+{
+"id": "ps046",
+"materia": "Matematica",
+"data": "2026-10-07",
+"argomento": "Numeri razionali: addizione e sottrazione in Q",
+"seed": 1
+},
+{
+"id": "ps047",
+"materia": "Italiano",
+"data": "2026-10-08",
+"argomento": "Analisi logica: soggetto, predicato, complemento di specificazione, complemento di luogo",
+"seed": 1
+},
+{
+"id": "ps048",
+"materia": "Latino",
+"data": "2026-10-08",
+"argomento": "Esercizi sui verbi",
+"seed": 1
+},
+{
+"id": "ps049",
+"materia": "Matematica",
+"data": "2026-10-08",
+"argomento": "Moltiplicazione, divisione e potenze in Q; esponente negativo; espressioni",
+"seed": 1
+},
+{
+"id": "ps050",
+"materia": "Scienze naturali",
+"data": "2026-10-08",
+"argomento": "Forze di coesione e agitazione termica",
+"seed": 1
+},
+{
+"id": "ps051",
+"materia": "Storia e geografia",
+"data": "2026-10-08",
+"argomento": "I Sumeri",
+"seed": 1
+},
+{
+"id": "ps052",
+"materia": "Italiano",
+"data": "2026-10-09",
+"argomento": "Lettura integrata e commentata di \"Cuore di cane\"",
+"seed": 1
+},
+{
+"id": "ps053",
+"materia": "Matematica",
+"data": "2026-10-09",
+"argomento": "Recupero del test d'ingresso; esercitazione sulle espressioni con le proprietà delle potenze",
+"seed": 1
+},
+{
+"id": "ps054",
+"materia": "Fisica",
+"data": "2026-10-09",
+"argomento": "Ripasso dei capitoli 1 e 2",
+"seed": 1
+},
+{
+"id": "ps055",
+"materia": "Storia e geografia",
+"data": "2026-10-09",
+"argomento": "L'invenzione della scrittura; gli Accadi",
+"seed": 1
+},
+{
+"id": "ps056",
+"materia": "Disegno e storia dell'arte",
+"data": "2026-10-12",
+"argomento": "Inizio Tavola 1: divinità egizia, ingrandimento con maglia ortogonale",
+"seed": 1
+},
+{
+"id": "ps057",
+"materia": "Matematica",
+"data": "2026-10-12",
+"argomento": "Correzione esercizi e ripasso",
+"seed": 1
+},
+{
+"id": "ps058",
+"materia": "Fisica",
+"data": "2026-10-13",
+"argomento": "Ripasso: potenze di dieci e notazione scientifica, equivalenze e approssimazione",
+"seed": 1
+},
+{
+"id": "ps059",
+"materia": "Scienze naturali",
+"data": "2026-10-13",
+"argomento": "Miscugli omogenei ed eterogenei",
+"seed": 1
+},
+{
+"id": "ps060",
+"materia": "Latino",
+"data": "2026-10-14",
+"argomento": "La costruzione della frase latina",
+"seed": 1
+},
+{
+"id": "ps061",
+"materia": "Matematica",
+"data": "2026-10-14",
+"argomento": "Esercitazione per la verifica: dalle frazioni ai numeri decimali e viceversa",
+"seed": 1
+},
+{
+"id": "ps062",
+"materia": "Italiano",
+"data": "2026-10-15",
+"argomento": "Analisi logica",
+"seed": 1
+},
+{
+"id": "ps063",
+"materia": "Latino",
+"data": "2026-10-15",
+"argomento": "Infinito presente attivo e passivo; gli aggettivi femminili della prima classe",
+"seed": 1
+},
+{
+"id": "ps064",
+"materia": "Matematica",
+"data": "2026-10-15",
+"argomento": "Esercitazione per la verifica: confronto tra numeri razionali e rappresentazione su retta orientata, espressioni con numeri decimali",
+"seed": 1
+},
+{
+"id": "ps065",
+"materia": "Scienze naturali",
+"data": "2026-10-15",
+"argomento": "Ripasso",
+"seed": 1
+},
+{
+"id": "ps066",
+"materia": "Scienze naturali",
+"data": "2026-10-15",
+"argomento": "Verifica orale; i colloidi",
+"seed": 1
+},
+{
+"id": "ps067",
+"materia": "Storia e geografia",
+"data": "2026-10-15",
+"argomento": "I Babilonesi",
+"seed": 1
+},
+{
+"id": "ps068",
+"materia": "Storia e geografia",
+"data": "2026-10-16",
+"argomento": "Gli Assiri; il secondo impero babilonese",
+"seed": 1
+},
+{
+"id": "ps069",
+"materia": "Matematica",
+"data": "2026-10-16",
+"argomento": "Esercitazione per la verifica",
+"seed": 1
+},
+{
+"id": "ps070",
+"materia": "Matematica",
+"data": "2026-10-19",
+"argomento": "Esercitazione per la verifica",
+"seed": 1
+},
+{
+"id": "ps071",
+"materia": "Disegno e storia dell'arte",
+"data": "2026-10-19",
+"argomento": "Tavola 1: disegno in classe; interrogazione",
+"seed": 1
+},
+{
+"id": "ps072",
+"materia": "Storia e geografia",
+"data": "2026-10-20",
+"argomento": "L'Egitto: la società egizia",
+"seed": 1
+},
+{
+"id": "ps073",
+"materia": "Scienze naturali",
+"data": "2026-10-20",
+"argomento": "Verifica orale; le soluzioni",
+"seed": 1
+},
+{
+"id": "ps074",
+"materia": "Latino",
+"data": "2026-10-20",
+"argomento": "Uso del dizionario; le particolarità della prima declinazione",
+"seed": 1
+},
+{
+"id": "ps075",
+"materia": "Fisica",
+"data": "2026-10-20",
+"argomento": "Compito in classe",
+"seed": 1
+},
+{
+"id": "ps076",
+"materia": "Scienze motorie",
+"data": "2026-10-21",
+"argomento": "Esercitazione a corpo libero (sarà oggetto di valutazione pratica); pallavolo: fondamentali",
+"seed": 1
+},
+{
+"id": "ps077",
+"materia": "Matematica",
+"data": "2026-10-21",
+"argomento": "Verifica scritta sui numeri (naturali, interi, razionali, esponente negativo, proprietà delle potenze, espressioni)",
+"seed": 1
+},
+{
+"id": "ps078",
+"materia": "Inglese",
+"data": "2026-10-21",
+"argomento": "Controllo quaderni e compiti; verifiche orali in classe; lavoro su Alice in Wonderland",
+"seed": 1
+},
+{
+"id": "ps079",
+"materia": "Latino",
+"data": "2026-10-21",
+"argomento": "Complemento di compagnia; infinito e indicativo presente del verbo sum",
+"seed": 1
+},
+{
+"id": "ps080",
+"materia": "Latino",
+"data": "2026-10-22",
+"argomento": "Predicato nominale e verbale",
+"seed": 1
+},
+{
+"id": "ps081",
+"materia": "Storia e geografia",
+"data": "2026-10-23",
+"argomento": "Egitto: l'Antico Regno e le piramidi",
+"seed": 1
+},
+{
+"id": "ps082",
+"materia": "Italiano",
+"data": "2026-10-23",
+"argomento": "Fabula e intreccio, analessi e prolessi, schema narrativo",
+"seed": 1
+},
+{
+"id": "ps083",
+"materia": "Fisica",
+"data": "2026-10-23",
+"argomento": "Vettori: definizione e rappresentazione su un piano cartesiano",
+"seed": 1
+},
+{
+"id": "ps084",
+"materia": "Disegno e storia dell'arte",
+"data": "2026-10-26",
+"argomento": "Tavola 1: disegno in classe; interrogazione",
+"seed": 1
+},
+{
+"id": "ps085",
+"materia": "Matematica",
+"data": "2026-10-26",
+"argomento": "Introduzione alla geometria (enti geometrici, postulati e teoremi, segmento, semiretta, semipiano, figure concave e convesse); insiemistica: definizioni e rappresentazione",
+"seed": 1
+},
+{
+"id": "ps086",
+"materia": "Italiano",
+"data": "2026-10-26",
+"argomento": "Grammatica: ripasso di quanto svolto finora",
+"seed": 1
+},
+{
+"id": "ps087",
+"materia": "Educazione civica",
+"data": "2026-10-26",
+"argomento": "Il valore dei beni culturali e la loro tutela",
+"seed": 1
+},
+{
+"id": "ps088",
+"materia": "Latino",
+"data": "2026-10-27",
+"argomento": "I complementi di luogo",
+"seed": 1
+},
+{
+"id": "ps089",
+"materia": "Scienze naturali",
+"data": "2026-10-27",
+"argomento": "Verifica orale",
+"seed": 1
+},
+{
+"id": "ps090",
+"materia": "Storia e geografia",
+"data": "2026-10-27",
+"argomento": "La scrittura egizia",
+"seed": 1
+},
+{
+"id": "ps091",
+"materia": "Educazione civica",
+"data": "2026-10-28",
+"argomento": "Assemblea e votazioni per i rappresentanti di classe",
+"seed": 1
+},
+{
+"id": "ps092",
+"materia": "Latino",
+"data": "2026-10-28",
+"argomento": "Indicativo presente passivo; complemento d'agente e di causa efficiente",
+"seed": 1
+},
+{
+"id": "ps093",
+"materia": "Matematica",
+"data": "2026-10-28",
+"argomento": "Proporzioni: esempi",
+"seed": 1
+},
+{
+"id": "ps094",
+"materia": "Scienze motorie",
+"data": "2026-10-28",
+"argomento": "Progetto \"Racchette in classe\" (tennis) con un'istruttrice federale",
+"seed": 1
+},
+{
+"id": "ps095",
+"materia": "Italiano",
+"data": "2026-10-29",
+"argomento": "Volgere un verbo dall'attivo al passivo",
+"seed": 1
+},
+{
+"id": "ps096",
+"materia": "Latino",
+"data": "2026-10-29",
+"argomento": "Il complemento di modo",
+"seed": 1
+},
+{
+"id": "ps097",
+"materia": "Matematica",
+"data": "2026-10-29",
+"argomento": "Consegna e correzione del compito scritto; insiemistica: sottoinsiemi, differenza, complementare",
+"seed": 1
+},
+{
+"id": "ps098",
+"materia": "Scienze naturali",
+"data": "2026-10-29",
+"argomento": "Verifica orale: miscugli e sostanze pure, soluzioni e concentrazioni",
+"seed": 1
+},
+{
+"id": "ps099",
+"materia": "Storia e geografia",
+"data": "2026-10-29",
+"argomento": "Il Nuovo Regno",
+"seed": 1
+},
+{
+"id": "ps100",
+"materia": "Matematica",
+"data": "2026-10-30",
+"argomento": "Insiemistica: partizione e ripasso; controllo geometria",
+"seed": 1
+},
+{
+"id": "ps101",
+"materia": "Educazione civica",
+"data": "2026-11-02",
+"argomento": "Esposizione del lavoro alla classe",
+"seed": 1
+},
+{
+"id": "ps102",
+"materia": "Matematica",
+"data": "2026-11-02",
+"argomento": "Correzione esercizi e ripasso; insiemistica: unione, intersezione",
+"seed": 1
+},
+{
+"id": "ps103",
+"materia": "Italiano",
+"data": "2026-11-02",
+"argomento": "Prova comune",
+"seed": 1
+},
+{
+"id": "ps104",
+"materia": "Fisica",
+"data": "2026-11-03",
+"argomento": "Ripasso di tutte le modalità di scrittura dei vettori (in componenti, con i versori, in matrice); somma, sottrazione e modulo di un vettore; vettore per uno scalare; rappresentazione bidimensionale e tridimensionale",
+"seed": 1
+},
+{
+"id": "ps105",
+"materia": "Latino",
+"data": "2026-11-03",
+"argomento": "Compito in classe",
+"seed": 1
+},
+{
+"id": "ps106",
+"materia": "Scienze naturali",
+"data": "2026-11-03",
+"argomento": "Soluzioni e solubilità; verifica orale",
+"seed": 1
+},
+{
+"id": "ps107",
+"materia": "Storia e geografia",
+"data": "2026-11-03",
+"argomento": "I popoli indoeuropei",
+"seed": 1
+},
+{
+"id": "ps108",
+"materia": "Latino",
+"data": "2026-11-04",
+"argomento": "Interrogazione",
+"seed": 1
+},
+{
+"id": "ps109",
+"materia": "Latino",
+"data": "2026-11-05",
+"argomento": "Esercizi di traduzione",
+"seed": 1
+},
+{
+"id": "ps110",
+"materia": "Scienze naturali",
+"data": "2026-11-05",
+"argomento": "Verifica orale; metodi di separazione dei miscugli",
+"seed": 1
+},
+{
+"id": "ps111",
+"materia": "Storia e geografia",
+"data": "2026-11-05",
+"argomento": "Gli Ittiti",
+"seed": 1
+},
+{
+"id": "ps112",
+"materia": "Fisica",
+"data": "2026-11-06",
+"argomento": "Ripasso del concetto di campo, forza e vettori; esercizio",
+"seed": 1
+},
+{
+"id": "ps113",
+"materia": "Matematica",
+"data": "2026-11-06",
+"argomento": "Correzione esercizi e ripasso; insiemistica: insieme delle parti, partizione di un insieme",
+"seed": 1
+},
+{
+"id": "ps114",
+"materia": "Storia e geografia",
+"data": "2026-11-06",
+"argomento": "I Persiani",
+"seed": 1
+},
+{
+"id": "ps115",
+"materia": "Disegno e storia dell'arte",
+"data": "2026-11-09",
+"argomento": "Verifiche orali di storia dell'arte e di educazione civica; Tavola 1 (completare)",
+"seed": 1
+},
+{
+"id": "ps116",
+"materia": "Italiano",
+"data": "2026-11-09",
+"argomento": "Correzione della prova comune; Ettore e Andromaca alle porte Scee (Iliade)",
+"seed": 1
+},
+{
+"id": "ps117",
+"materia": "Matematica",
+"data": "2026-11-09",
+"argomento": "Correzione e ripasso; insiemistica: differenza, complementare",
+"seed": 1
+},
+{
+"id": "ps118",
+"materia": "Fisica",
+"data": "2026-11-10",
+"argomento": "Compito in classe",
+"seed": 1
+},
+{
+"id": "ps119",
+"materia": "Latino",
+"data": "2026-11-10",
+"argomento": "Consegna del compito in classe; il dativo di possesso",
+"seed": 1
+},
+{
+"id": "ps120",
+"materia": "Scienze naturali",
+"data": "2026-11-10",
+"argomento": "Verifica orale (volontari); metodi di separazione dei miscugli",
+"seed": 1
+},
+{
+"id": "ps121",
+"materia": "Storia e geografia",
+"data": "2026-11-10",
+"argomento": "I Fenici",
+"seed": 1
+},
+{
+"id": "ps122",
+"materia": "Latino",
+"data": "2026-11-11",
+"argomento": "Imperativo presente e futuro",
+"seed": 1
+},
+{
+"id": "ps123",
+"materia": "Matematica",
+"data": "2026-11-11",
+"argomento": "Percentuali",
+"seed": 1
+},
+{
+"id": "ps124",
+"materia": "Scienze motorie",
+"data": "2026-11-11",
+"argomento": "Progetto \"Racchette in classe\" con un'istruttrice federale",
+"seed": 1
+},
+{
+"id": "ps125",
+"materia": "Latino",
+"data": "2026-11-12",
+"argomento": "Esercizi di traduzione; ripasso",
+"seed": 1
+},
+{
+"id": "ps126",
+"materia": "Matematica",
+"data": "2026-11-12",
+"argomento": "Interrogazioni per il recupero delle insufficienze (rinviate); correzione esercizi e ripasso",
+"seed": 1
+},
+{
+"id": "ps127",
+"materia": "Fisica",
+"data": "2026-11-13",
+"argomento": "Concetto di campo e di forza che cambia lo stato di un corpo; confronto tra campo gravitazionale e campo elettrico; la fisica dei corpi puntiformi e i sistemi di riferimento",
+"seed": 1
+},
+{
+"id": "ps128",
+"materia": "Matematica",
+"data": "2026-11-13",
+"argomento": "L'IVA; problemi con percentuali e insiemi",
+"seed": 1
+},
+{
+"id": "ps129",
+"materia": "Storia e geografia",
+"data": "2026-11-13",
+"argomento": "Il popolo ebraico",
+"seed": 1
+},
+{
+"id": "ps130",
+"materia": "Italiano",
+"data": "2026-11-16",
+"argomento": "Compito in classe di epica",
+"seed": 1
+},
+{
+"id": "ps131",
+"materia": "Educazione civica",
+"data": "2026-11-16",
+"argomento": "Verifiche orali",
+"seed": 1
+},
+{
+"id": "ps132",
+"materia": "Fisica",
+"data": "2026-11-17",
+"argomento": "Forza di gravitazione universale e forza peso; riconsegnato il compito",
+"seed": 1
+},
+{
+"id": "ps133",
+"materia": "Latino",
+"data": "2026-11-17",
+"argomento": "Il complemento di causa; imperfetto indicativo attivo e passivo",
+"seed": 1
+},
+{
+"id": "ps134",
+"materia": "Scienze naturali",
+"data": "2026-11-17",
+"argomento": "Introduzione ai passaggi di stato",
+"seed": 1
+},
+{
+"id": "ps135",
+"materia": "Storia e geografia",
+"data": "2026-11-17",
+"argomento": "Il popolo ebraico",
+"seed": 1
+},
+{
+"id": "ps136",
+"materia": "Educazione civica",
+"data": "2026-11-18",
+"argomento": "Educazione finanziaria di base: sistema bancario, interesse semplice e composto, l'inflazione",
+"seed": 1
+},
+{
+"id": "ps137",
+"materia": "Latino",
+"data": "2026-11-18",
+"argomento": "Seconda declinazione: sostantivi in -us",
+"seed": 1
+},
+{
+"id": "ps138",
+"materia": "Matematica",
+"data": "2026-11-18",
+"argomento": "Problemi con insiemi, percentuali e proporzioni",
+"seed": 1
+},
+{
+"id": "ps139",
+"materia": "Scienze motorie",
+"data": "2026-11-18",
+"argomento": "Teoria: apparato scheletrico e vizi posturali; pratica: esercitazione a corpo libero con valutazione",
+"seed": 1
+},
+{
+"id": "ps140",
+"materia": "Italiano",
+"data": "2026-11-19",
+"argomento": "Test sulla lettura del libro (\"Cuore di cane\")",
+"seed": 1
+},
+{
+"id": "ps141",
+"materia": "Latino",
+"data": "2026-11-19",
+"argomento": "Seconda declinazione: sostantivi in -er",
+"seed": 1
+},
+{
+"id": "ps142",
+"materia": "Matematica",
+"data": "2026-11-19",
+"argomento": "Problemi pag. 128-131 con percentuali e proporzioni; esercizi su interesse semplice e composto, tasse e IVA",
+"seed": 1
+},
+{
+"id": "ps143",
+"materia": "Storia e geografia",
+"data": "2026-11-19",
+"argomento": "Creta",
+"seed": 1
+},
+{
+"id": "ps144",
+"materia": "Fisica",
+"data": "2026-11-20",
+"argomento": "Conversazione sul ruolo del fisico nella società: che lavoro può fare un fisico?",
+"seed": 1
+},
+{
+"id": "ps145",
+"materia": "Matematica",
+"data": "2026-11-20",
+"argomento": "Problemi con percentuali e IVA",
+"seed": 1
+},
+{
+"id": "ps146",
+"materia": "Storia e geografia",
+"data": "2026-11-20",
+"argomento": "Ripasso",
+"seed": 1
+},
+{
+"id": "ps147",
+"materia": "Disegno e storia dell'arte",
+"data": "2026-11-23",
+"argomento": "Arte egizia; correzione della Tavola 1: ingrandimento di un'immagine con maglia ortogonale",
+"seed": 1
+},
+{
+"id": "ps148",
+"materia": "Matematica",
+"data": "2026-11-23",
+"argomento": "Problemi per la verifica",
+"seed": 1
+},
+{
+"id": "ps149",
+"materia": "Disegno e storia dell'arte",
+"data": "2026-11-30",
+"argomento": "Arte greca (in programma)",
+"seed": 1
+},
+{
+"id": "ps150",
+"materia": "Matematica",
+"data": "2026-12-02",
+"argomento": "Geometria: angoli, congruenza, primi teoremi; algebra: monomi (in programma)",
+"seed": 1
+},
+{
+"id": "ps151",
+"materia": "Matematica",
+"data": "2026-12-03",
+"argomento": "Operazioni con i monomi (in programma)",
+"seed": 1
+},
+{
+"id": "ps152",
+"materia": "Matematica",
+"data": "2026-12-09",
+"argomento": "Geometria: controllo teoria ed esercizi; algebra: i polinomi (in programma)",
+"seed": 1
+}
+]
+}

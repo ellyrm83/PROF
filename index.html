@@ -311,7 +311,7 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
  </div></header>
  <div class="wrap">
   <div class="card">
-   <div class="row"><label class="btn hi" for="vShot">Carica screenshot dei voti</label><button class="btn" id="vPlan">Piano di ripasso col prof</button></div>
+   <div class="row"><label class="btn hi" for="vShot">Carica screenshot dei voti</label><button class="btn" id="vPlan">Piano di recupero generale</button></div>
    <input type="file" id="vShot" accept="image/*,application/pdf,video/*" multiple hidden>
    <input type="file" id="vVer" accept="image/*,application/pdf" multiple hidden>
    <p class="hint" id="vStatus">Su Axios apri <b>Voti</b>, fai lo screenshot e caricalo: il prof legge materia, data, tipo e voto.</p>
@@ -1102,7 +1102,7 @@ $('#vVer').addEventListener('change',e=>{readVerifica([...e.target.files]);e.tar
 $('#vAdd').addEventListener('click',()=>{const m=$('#vMat').value.trim();if(!m){toast('Scrivi la materia');return}const lab=$('#vVal').value;
  voti.push({id:'v'+uid(),materia:m,data:$('#vDate').value||today(),label:lab,n:vNum(lab),tipo:$('#vTipo').value,argomento:$('#vArg').value.trim(),note:$('#vNote').value.trim(),errori:'',peso:1,added:Date.now()});
  saveVoti();$('#vArg').value='';$('#vNote').value='';toast('Voto aggiunto');renderVoti()});
-$('#vPlan').addEventListener('click',()=>{if(!voti.length){toast('Prima aggiungi qualche voto');return}openProf(null,'studio','Prof, guarda i miei voti e fammi un piano di ripasso: da quale materia e da quali argomenti parto questa settimana?',null,'organizzazione')});
+$('#vPlan').addEventListener('click',()=>{if(!voti.length){toast('Prima aggiungi qualche voto');return}openProf(null,'studio','Prof, guarda i miei voti e il programma svolto in classe e fammi un piano di recupero delle insufficienze per le prossime settimane: quali materie e argomenti per primi, quanto tempo al giorno, e come arrivo pronto alle prossime verifiche.',null,'organizzazione')});
 function renderVoti(){vOptions();if(!$('#vDate').value)$('#vDate').value=today();
  const keys=[...new Set([...voti.map(v=>matKey(v.materia)),...Object.keys(vPerMat)])].filter(k=>k!=='organizzazione').sort((a,b)=>vScore(b)-vScore(a));
  const all=voti.filter(v=>!isNaN(v.n));const gm=all.length?all.reduce((t,v)=>t+v.n,0)/all.length:NaN;
@@ -1114,6 +1114,7 @@ function renderVoti(){vOptions();if(!$('#vDate').value)$('#vDate').value=today()
   ${st.L.length>1?`<div class="spark" aria-hidden="true">${st.L.slice(-12).map(v=>`<i style="height:${Math.max(8,(v.n-2)/8*100)}%;${v.n<6?'background:#ff6b7a':''}"></i>`).join('')}</div>`:''}
   <div class="row" style="gap:10px;margin-top:8px"><label class="hint">Obiettivo <select data-vgoal="${k}" style="width:auto">${[6,6.5,7,7.5,8,8.5,9,9.5,10].map(x=>`<option ${x==S.obiettivo?'selected':''}>${x}</option>`).join('')}</select></label>
   <label class="hint">Priorità di ripasso <select data-vprio="${k}" style="width:auto"><option value="alta" ${S.priorita==='alta'?'selected':''}>Alta</option><option value="normale" ${S.priorita==='normale'?'selected':''}>Normale</option><option value="bassa" ${S.priorita==='bassa'?'selected':''}>Bassa</option></select></label></div>
+  ${(st.m<6||vAll(k).some(v=>v.n<6))?`<div class="row" style="margin-top:8px"><button class="btn sm hi" data-vrec="${k}">Piano di recupero</button></div>`:''}
   <label class="hint" style="display:block;margin-top:6px">Indicazioni per il prof su questa materia<input type="text" data-vnota="${k}" value="${esc(S.nota)}" placeholder="es. insisti sul lessico; all'orale si blocca, fallo esporre spesso"></label>
   ${vAll(k).reverse().map(v=>`<div class="vrow"><span class="vchip ${isNaN(v.n)?'':vCls(v.n,S.obiettivo)}">${esc(v.label)}</span><div class="tx"><b>${esc(v.tipo||'voto')}</b> <span class="mute">${v.data?new Date(v.data+'T12:00').toLocaleDateString('it-IT',{day:'numeric',month:'short'}):''}</span>
    <input type="text" data-varg="${v.id}" value="${esc(v.argomento)}" placeholder="Argomento" style="margin-top:4px"><input type="text" data-vnote="${v.id}" value="${esc(v.note)}" placeholder="Com'è andata?" style="margin-top:4px">
@@ -1125,7 +1126,7 @@ $('#vList').addEventListener('change',e=>{const d=e.target.dataset;
  else if(d.vprio){vSet(d.vprio).priorita=e.target.value;saveVoti();renderVoti()}
  else if(d.vnota!=null){vSet(d.vnota).nota=e.target.value.trim();saveVoti()}
  else if(d.varg||d.vnote||d.vpeso){const v=voti.find(x=>x.id===(d.varg||d.vnote||d.vpeso));if(!v)return;if(d.varg)v.argomento=e.target.value.trim();if(d.vnote)v.note=e.target.value.trim();if(d.vpeso){v.peso=+e.target.value;saveVoti();renderVoti();return}saveVoti()}});
-$('#vList').addEventListener('click',e=>{const x=e.target.closest('[data-vdel]'),f=e.target.closest('[data-vver]');
+$('#vList').addEventListener('click',e=>{const x=e.target.closest('[data-vdel]'),f=e.target.closest('[data-vver]'),rc=e.target.closest('[data-vrec]');if(rc){recupero(rc.dataset.vrec);return}
  if(f){vVerId=f.dataset.vver;$('#vVer').click()}
  if(x){if(x.dataset.c!=='1'){x.dataset.c='1';x.textContent='Sicuro?';return}voti=voti.filter(v=>v.id!==x.dataset.vdel);saveVoti();renderVoti()}});
 $('#vFocus').addEventListener('click',e=>{const b=e.target.closest('[data-vgo]');if(!b)return;const k=b.dataset.vgo,st=vStats(k);const lw=st.L.filter(v=>v.n<Math.max(6,vSet(k).obiettivo)).slice(-3).map(v=>v.argomento).filter(Boolean);
@@ -1137,7 +1138,7 @@ function savePrProg(){ls.set('prof-programma-v1',programma);if(pcol){const body=
 function programmaTxt(k){const keys=k&&k!=='organizzazione'?[k]:[...new Set(programma.map(x=>matKey(x.materia)))];if(!programma.length)return '';
  let t='PROGRAMMA SVOLTO IN CLASSE (dal registro: a che punto è la classe; ripassa e collega a questi argomenti, e aiutalo a stare al passo con l\'ultimo argomento fatto):\n';
  for(const m of keys){const L=programma.filter(x=>matKey(x.materia)===m).sort((a,b)=>(a.data||'').localeCompare(b.data||''));if(!L.length)continue;
-  t+=`\n# ${matName(m)} (ultimo argomento: ${L[L.length-1].argomento})\n`+L.slice(k&&k!=='organizzazione'?-20:-5).map(x=>`- ${x.data||'?'}: ${x.argomento}`).join('\n')}
+  t+=`\n# ${matName(m)} (ultimo argomento fatto: ${(L.filter(x=>!x.data||x.data<=today()).pop()||L[0]).argomento})\n`+L.filter(x=>!x.data||x.data<=today()).slice(k&&k!=='organizzazione'?-25:-6).map(x=>`- ${x.data||'?'}: ${x.argomento}`).join('\n')+(L.some(x=>x.data>today())?'\nPROSSIME LEZIONI PREVISTE: '+L.filter(x=>x.data>today()).map(x=>x.data+' '+x.argomento.replace(/ \(in programma\)$/,'')).join('; '):'')}
  return t}
 async function readProgramma(files){const st=$('#pStatus');if(!sample){$('#noAI').hidden=false;st.textContent='Il prof non è attivo: aggiungi gli argomenti a mano.';return}
  st.textContent='Preparo le immagini…';const imgs=await filesToImages(files,6);if(!imgs.length){st.textContent='';return}
@@ -1185,9 +1186,19 @@ $('#tests').addEventListener('click',e=>{const b=e.target.closest('button');if(!
 function drawMatVoti(){const el=$('#matVoti');if(!el)return;if(mat==='organizzazione'){el.innerHTML='';return}const st=vStats(mat),S=vSet(mat),A=vAll(mat);
  el.innerHTML=`<div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><h3 style="margin:0">I miei voti di ${esc(matName(mat))}</h3><span class="row">${A.length?`<span class="hint">media</span><span class="vchip ${isNaN(st.m)?'':vCls(st.m,S.obiettivo)}">${isNaN(st.m)?'—':st.m.toFixed(1)}</span>`:''}<a class="btn sm" href="#voti">Tutti</a></span></div>
   <div class="row" style="gap:6px;margin-top:8px">${A.length?A.slice(-8).map(v=>`<span class="vchip ${isNaN(v.n)?'':vCls(v.n,S.obiettivo)}" title="${esc((v.data||'')+' '+(v.tipo||'')+' '+(v.argomento||'')+' '+(v.note||''))}">${esc(v.label)}</span>`).join(''):'<span class="mute">Ancora nessun voto in questa materia.</span>'}</div>
+  ${(()=>{const P=programma.filter(x=>matKey(x.materia)===mat).sort((a,b)=>(b.data||'').localeCompare(a.data||''));const done=P.filter(x=>x.data<=today()),next=P.filter(x=>x.data>today()).reverse();return P.length?`<details style="margin-top:8px"><summary>Programma in classe · ${done.length} lezioni${done[0]?' · ultima: '+esc(done[0].argomento.slice(0,50)):''}</summary><div>${next.length?`<p class="hint" style="margin:4px 0">Prossime lezioni: ${next.map(x=>esc(new Date(x.data+'T12:00').toLocaleDateString('it-IT',{day:'numeric',month:'short'})+' '+x.argomento.replace(/ \(in programma\)$/,''))).join(' · ')}</p>`:''}${done.map(x=>`<div style="padding:3px 0;border-bottom:1px dashed var(--line)"><span class="mute">${new Date(x.data+'T12:00').toLocaleDateString('it-IT',{day:'numeric',month:'short'})}</span> ${esc(x.argomento)}</div>`).join('')}</div></details>`:''})()}
+  ${(A.length&&(st.m<6||A.filter(v=>v.n<6).length))?`<div class="row" style="margin-top:8px"><button class="btn sm hi" id="mvRec">Piano di recupero</button></div>`:''}
   <details style="margin-top:8px"><summary>Aggiungi un voto</summary><div class="row" style="gap:8px;margin-top:6px"><select id="mvVal" style="width:auto">${VOTI_L.map(l=>`<option ${l==='6'?'selected':''}>${l}</option>`).join('')}</select><select id="mvTipo" style="width:auto"><option value="scritto">Scritto</option><option value="orale">Orale</option><option value="pratico">Pratico</option><option value="test">Test</option></select><input type="date" id="mvDate" value="${today()}" style="width:auto"></div>
   <input type="text" id="mvArg" placeholder="Argomento" style="margin-top:6px"><input type="text" id="mvNote" placeholder="Com'è andata?" style="margin-top:6px"><div class="row" style="margin-top:6px"><button class="btn sm hi" id="mvSave">Salva il voto</button></div></details></div>`}
-$('#matVoti').addEventListener('click',e=>{if(e.target.id!=='mvSave')return;const lab=$('#mvVal').value;voti.push({id:'v'+uid(),materia:matName(mat),data:$('#mvDate').value||today(),label:lab,n:vNum(lab),tipo:$('#mvTipo').value,argomento:$('#mvArg').value.trim(),note:$('#mvNote').value.trim(),errori:'',peso:1,from:'mano',added:Date.now()});saveVoti();toast('Voto salvato: il prof ne terrà conto');drawMatVoti()});
+$('#matVoti').addEventListener('click',e=>{if(e.target.id==='mvRec'){recupero(mat);return}if(e.target.id!=='mvSave')return;const lab=$('#mvVal').value;voti.push({id:'v'+uid(),materia:matName(mat),data:$('#mvDate').value||today(),label:lab,n:vNum(lab),tipo:$('#mvTipo').value,argomento:$('#mvArg').value.trim(),note:$('#mvNote').value.trim(),errori:'',peso:1,from:'mano',added:Date.now()});saveVoti();toast('Voto salvato: il prof ne terrà conto');drawMatVoti()});
+
+async function seedProgramma(){if(programma.some(x=>x.seed)||ls.get('prof-seed-prog',0))return;
+ try{const r=await fetch('programma-seed.json?v=1');if(!r.ok)return;const j=await r.json();let n=0;
+  for(const a of j.argomenti||[]){const key=(matKey(a.materia)+'|'+a.data+'|'+a.argomento).toLowerCase();if(programma.some(x=>(matKey(x.materia)+'|'+x.data+'|'+x.argomento).toLowerCase()===key))continue;programma.push({...a,added:Date.now()});n++}
+  ls.set('prof-seed-prog',1);if(n){savePrProg();if(location.hash==='#lezione')renderProgramma();if(location.hash===''||location.hash==='#prof')drawMatVoti()}}catch(e){}}
+
+function recupero(k){const low=vAll(k).filter(v=>v.n<6||v.label==='—').slice(-6).map(v=>`${v.label} ${v.tipo||''}${v.argomento?' su '+v.argomento:''}${v.note?' ('+v.note+')':''}`);
+ openProf(null,'studio',`Prof, ho delle insufficienze in ${matName(k)}${low.length?': '+low.join('; '):''}. Fammi un piano di recupero: guarda i miei voti e gli argomenti fatti in classe, dimmi da dove partire, cosa ripassare ogni giorno e come prepararmi alla prossima verifica. Poi cominciamo dal primo passo.`,null,k)}
 /* ---------- appunti da stampare (quaderno) ---------- */
 let dispense=ls.get('prof-dispense-v1',[]),dCur=null;
 function saveDisp(d){ls.set('prof-dispense-v1',dispense);if(col)col.doc('disp-'+d.id).set(JSON.parse(JSON.stringify(d))).catch(()=>toast('Appunti salvati solo su questo dispositivo'))}
@@ -1466,6 +1477,7 @@ const use=n=>{try{return Promise.resolve(window.claude?.use?.(n)).catch(()=>null
   ls.set('prof-arcs',arcIdx);ls.set('prof-chats-v1',chats);setMat(mat);
   try{setDoc=c.doc('impostazioni');const sd=await lim(setDoc.get());if(sd.exists&&sd.data().pin){pinHash=sd.data().pin;ls.set('prof-pin',pinHash)}else if(pinHash)setDoc.set({pin:pinHash}).catch(()=>{})}catch(e){}
   try{const pd=c.doc('programma');const ps=await lim(pd.get());pcol=pd;const items=ps.exists?(ps.data().items||[]):[];const ids4=new Set(items.map(i=>i.id));programma=[...items.map(i=>JSON.parse(JSON.stringify(i))),...programma.filter(i=>!ids4.has(i.id))];savePrProg()}catch(e){pcol=null}
+  seedProgramma();
   try{const vd=c.doc('voti');const vs=await lim(vd.get());vcol=vd;const items=vs.exists?(vs.data().items||[]):[];const ids3=new Set(items.map(i=>i.id));voti=[...items.map(i=>JSON.parse(JSON.stringify(i))),...voti.filter(i=>!ids3.has(i.id))];if(vs.exists&&vs.data().perMat)vPerMat={...JSON.parse(JSON.stringify(vs.data().perMat)),...vPerMat};saveVoti()}catch(e){vcol=null}
   try{const cd=c.doc('compiti');const cs=await lim(cd.get());ccol=cd;const items=cs.exists?(cs.data().items||[]):[];const ids2=new Set(items.map(i=>i.id));compiti=[...items.map(i=>JSON.parse(JSON.stringify(i))),...compiti.filter(i=>!ids2.has(i.id))];saveCompiti()}catch(e){ccol=null}
   const ids=new Set(remote.map(r=>r.id));const extra=schede.filter(s=>!ids.has(s.id));schede=[...remote,...extra];extra.forEach(s=>save(s,true));ls.set('prof-schede-v1',schede)}catch(e){col=null}}
