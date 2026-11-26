@@ -163,6 +163,7 @@ details li{margin:3px 0}
    <div class="mats" id="mats" role="tablist" aria-label="Materie"></div>
    <div class="row" id="modes" role="group" aria-label="Che cosa facciamo" style="margin-top:10px"></div>
    <p class="hint" id="modeHint"></p>
+   <div class="row" style="margin-top:8px"><label class="hint" for="qual">Qualità del prof per <b id="qualMat"></b></label><select id="qual" style="width:auto"><option value="eco">Economica (Haiku)</option><option value="alta">Alta (Sonnet)</option></select></div>
    <div id="matComp"></div>
    <label class="f" for="profScheda">Argomento</label>
    <select id="profScheda"></select>
@@ -773,7 +774,7 @@ function renderProf(){
  ps.innerHTML='<option value="">Nessun argomento preciso</option>'+own.sort((a,b)=>b.updated-a.updated).map(x=>`<option value="${esc(x.id)}">${esc(x.titolo||'Senza titolo')}</option>`).join('');
  if(pId&&!own.some(x=>x.id===pId))pId='';ps.value=pId;
  $('#modes').innerHTML=MODES.map(m=>`<button class="chip" data-m="${m.id}" aria-pressed="${m.id===mode}">${m.t}</button>`).join('');
- $('#modeHint').textContent=MODES.find(m=>m.id===mode).h;drawMatComp();drawPath($('#path1'),get(pId));drawFocus();voiceUI();drawPend();$('#memBox').hidden=true;
+ $('#modeHint').textContent=MODES.find(m=>m.id===mode).h;$('#qualMat').textContent=matName(mat);$('#qual').value=C(mat).qual||'eco';drawMatComp();drawPath($('#path1'),get(pId));drawFocus();voiceUI();drawPend();$('#memBox').hidden=true;
  drawChat();scrollEnd(true);
  if(!sample||busy)return;
  if(pending){const t=pending;pending='';ask(t);return}
@@ -820,8 +821,8 @@ ${altri.length?'Altri argomenti di questa materia già nelle sue schede: '+altri
 ${booksTxt(get(pId)||(mat!=='organizzazione'?{materia:matName(mat)}:null))}
 ${lezTxt()}
 ${compitiTxt()}`}
-async function talkImages(){const s=get(pId);const last=[...chat].reverse().find(m=>m.role==='user'&&!m.hidden);const ims=[...(last?.imgs||[])];
- for(const m of (s?.materiali||[]).slice(-5))if(!ims.some(x=>x.id===m.id))ims.push(m);const out=[];for(const m of ims.slice(0,6)){const b=await getBlob(m);if(b)out.push(b)}return out}
+async function talkImages(){const s=get(pId),c=C(mat);c.sent=c.sent||[];const last=chat[chat.length-1];const ims=last?.role==='user'&&last.imgs?[...last.imgs]:[];
+ for(const m of (s?.materiali||[]).slice(-5))if(!ims.some(x=>x.id===m.id)&&!c.sent.includes(m.id))ims.push(m);const out=[],ids=[];for(const m of ims.slice(0,6)){const b=await getBlob(m);if(b){out.push(b);ids.push(m.id)}}return {out,ids}}
 function apiMsgs(list){const L=list.filter(m=>m.role!=='note').slice(-24).map(m=>({role:m.role,content:m.content+(m.imgs?.length?`\n[ha allegato ${m.imgs.length} immagini]`:'')}));const out=[];
  for(const m of L){if(out.length&&out[out.length-1].role===m.role)out[out.length-1].content+='\n\n'+m.content;else out.push({...m})}
  if(out[0]?.role==='user')out.unshift({role:'assistant',content:'Eccomi, continuiamo.'});return out}
@@ -830,7 +831,8 @@ async function talk(){if(!sample||busy)return;busy=true;$('#send').disabled=true
  const msgs=[{role:'user',content:sys()+(bp?.txt?'\n\n'+bp.txt:'')+($('#voiceOn').checked?'\n\nORA STATE PARLANDO A VOCE: frasi brevi e naturali, niente simboli o elenchi.':'')+'\n\nInizia tu con il primo messaggio.'},...apiMsgs(target)];
  if(msgs[msgs.length-1].role!=='user')msgs.push({role:'user',content:'(continua)'});
  ctrl=new AbortController();
- try{const r=await ai(msgs,{images:[...(bp?.imgs||[]),...await talkImages()].slice(0,8),signal:ctrl.signal,onText:({text})=>{if(k===mat)drawChat(text)}});const t=r.text.trim();target.push({role:'assistant',content:t,t:Date.now()});saveChat(k);if(k===mat&&$('#voiceOn').checked)speakOut(t);updMemory(k)}
+ const ti=await talkImages(),c0=C(k);c0.sentPg=c0.sentPg||'';const pgKey=(get(pId)?.bookId||'')+'|'+(get(pId)?.pagine||'');const pimgs=bp?.imgs?.length&&c0.sentPg!==pgKey?bp.imgs:[];
+ try{const r=await ai(msgs,{images:[...pimgs,...ti.out].slice(0,8),complex:(C(k).qual==='alta')||(ti.out.length+pimgs.length>0&&C(k).qual!=='eco-only'),signal:ctrl.signal,onText:({text})=>{if(k===mat)drawChat(text)}});const t=r.text.trim();c0.sent=[...new Set([...(c0.sent||[]),...ti.ids])].slice(-200);if(pimgs.length)c0.sentPg=pgKey;target.push({role:'assistant',content:t,t:Date.now()});saveChat(k);if(k===mat&&$('#voiceOn').checked)speakOut(t);updMemory(k)}
  catch(e){if(e?.name!=='AbortError'&&e?.code!=='aborted')target.push({role:'assistant',content:aiErr(e),t:Date.now(),err:1})}
  busy=false;$('#send').disabled=false;if(k===mat){drawChat();scrollEnd()}}
 async function updMemory(k){const c=C(k);const n=c.messages.length;if(!sample||n-c.memAt<8)return;c.memAt=n;
@@ -847,13 +849,14 @@ const scrollEnd=now=>window.scrollTo({top:document.body.scrollHeight,behavior:no
 function note(t){chat.push({role:'note',content:t,t:Date.now()});saveChat(mat)}
 function stopTalk(){ctrl?.abort();busy=false;$('#send').disabled=false;shush()}
 const reset=stopTalk;
-function openProf(sc,m,text,extra,mk){stopTalk();setMat(mk||(sc?matKey(sc.materia):'organizzazione'));const c=C(mat);
+function openProf(sc,m,text,extra,mk){stopTalk();setMat(mk||(sc?matKey(sc.materia):'organizzazione'));const c=C(mat);if(sc&&pId!==sc.id){c.sent=[];c.sentPg=''}
  if(sc&&pId!==sc.id){pId=sc.id;c.pId=sc.id;note('Argomento: '+(sc.titolo||'senza titolo'))}
  if(m&&m!==mode){mode=m;c.mode=m;note('Modalità: '+MODES.find(x=>x.id===m).t)}
  if(extra)for(const x of extra)chat.push({...x,t:Date.now()});saveChat(mat);welcomed[mat]=1;pending=text||'';pend=[];go('prof')}
 $('#mats').addEventListener('click',e=>{const b=e.target.closest('[data-mat]');if(!b||b.dataset.mat===mat)return;stopTalk();setMat(b.dataset.mat);renderProf()});
 $('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b||b.dataset.m===mode)return;mode=b.dataset.m;C(mat).mode=mode;note('Modalità: '+MODES.find(x=>x.id===mode).t);if(mode==='inglese')$('#voiceOn').checked=true;renderProf()});
 $('#profScheda').addEventListener('change',e=>{pId=e.target.value;C(mat).pId=pId;if(pId)note('Argomento: '+(get(pId)?.titolo||''));renderProf()});
+$('#qual').addEventListener('change',e=>{C(mat).qual=e.target.value;saveChat(mat);toast(e.target.value==='alta'?matName(mat)+': prof di qualità alta':matName(mat)+': prof economico')});
 $('#memBtn').addEventListener('click',()=>{const b=$('#memBox');if(!b.hidden){b.hidden=true;return}const m=C(mat).memoria,p=ME().memoria;
  b.innerHTML='<span class="who">Appunti del prof · '+esc(matName(mat))+'</span>'+(m?fmt(m):'<span class="mute">Il prof scrive i suoi appunti dopo qualche scambio di messaggi.</span>')+(p?'<span class="who" style="margin-top:10px">Cose che Adriano gli ha raccontato</span>'+fmt(p):'');b.hidden=false});
 $('#older').addEventListener('click',async()=>{const ids=arcIdx[mat]||[];arcs[mat]=arcs[mat]||[];for(const id of ids){if(arcs[mat].some(a=>a.id===id))continue;let msgs=null;try{msgs=await idb.get('arc-'+id)}catch(e){}if(!msgs&&col){try{const d=await col.doc(id).get();if(d.exists)msgs=d.data().messages}catch(e){}}if(msgs)arcs[mat].push({id,messages:msgs})}
@@ -944,7 +947,7 @@ Valuta come un professore che insegna a esporre. Formato in testo semplice, nien
 **Prossima prova:** UNA sola cosa da allenare.
 **Domanda:** una domanda da professore per continuare l'interrogazione.
 Massimo 170 parole, tono incoraggiante, frasi brevi.`;
- try{const r=await ai(pr,{images:(await Promise.all((s.materiali||[]).slice(-3).map(getBlob))).filter(Boolean),onText:({text})=>{box.innerHTML='<span class="who">Prof</span>'+fmt(text)}});eFb=r.text.trim();box.innerHTML='<span class="who">Prof</span>'+fmt(eFb);
+ try{const r=await ai(pr,{complex:true,images:(await Promise.all((s.materiali||[]).slice(-3).map(getBlob))).filter(Boolean),onText:({text})=>{box.innerHTML='<span class="who">Prof</span>'+fmt(text)}});eFb=r.text.trim();box.innerHTML='<span class="who">Prof</span>'+fmt(eFb);
   s.esposizioni=[...(s.esposizioni||[]),{date:Date.now(),durata:Math.round(eSec),testo:t.slice(0,5000),feedback:eFb}].slice(-6);save(s,true);renderHist();
   if($('#voiceOn').checked)speakOut(eFb,'it')}
  catch(e){box.innerHTML='<span class="who">Prof</span>'+esc(aiErr(e))}

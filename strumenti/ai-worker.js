@@ -4,7 +4,8 @@
 //   ANTHROPIC_API_KEY → la chiave presa da console.anthropic.com (segreto)
 //   PROJECT_ID        → id del progetto Firebase di PROF
 //   ORIGIN            → https://ellyrm83.github.io
-const MODELS = { quick: "claude-haiku-5-5", default: "claude-sonnet-5-5", complex: "claude-sonnet-5-5" };
+const MODELS = { quick: "claude-haiku-5-5", default: "claude-haiku-5-5", complex: "claude-sonnet-5-5" };
+// default = Haiku (economico); complex = Sonnet: lo usa l'app per le materie in "qualità alta", le foto, gli indici e la correzione finale dell'esposizione
 const MAXTOK = { quick: 900, default: 1600, complex: 8000 };
 const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
 const enc = new TextEncoder();
