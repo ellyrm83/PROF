@@ -208,7 +208,7 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
 
 <section class="view" id="v-prof">
  <header class="board"><div class="in">
-  <h1>PROF</h1>
+  <div class="row" style="justify-content:space-between;align-items:flex-start"><h1>PROF</h1><a href="#impostazioni" aria-label="Impostazioni del genitore" style="color:#ffe9f4;opacity:.8;padding:6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a></div>
   <p>Ti guido col tuo metodo, un passo alla volta.</p>
   <div class="path" id="path1"></div>
   <div class="focus" id="focus"></div>
@@ -218,7 +218,6 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
    <div class="mats" id="mats" role="tablist" aria-label="Materie"></div>
    <div class="row" id="modes" role="group" aria-label="Che cosa facciamo" style="margin-top:10px"></div>
    <p class="hint" id="modeHint"></p>
-   <div class="row" style="margin-top:8px"><label class="hint" for="qual">Qualità del prof per <b id="qualMat"></b></label><select id="qual" style="width:auto"><option value="eco">Economica (Haiku)</option><option value="alta">Alta (Sonnet)</option></select></div>
    <div id="matComp"></div>
    <label class="f" for="profScheda">Argomento</label>
    <select id="profScheda"></select>
@@ -290,7 +289,6 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
    <p class="hint" id="lStatus"></p>
   </div>
   <div id="lList"></div>
-  <label class="tog hint" style="margin:10px 0 20px"><input type="checkbox" id="lRecOn">Attiva la registrazione delle lezioni col microfono (solo con Chrome)</label>
  </div>
 </section>
 
@@ -335,7 +333,6 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
   <div class="row" style="margin:16px 0"><button class="btn hi" id="addScheda">+ Nuova scheda</button><a class="btn" href="#libri">Scegli dal libro</a><a class="btn" href="#lezione">Lezioni e appunti</a><a class="btn" href="#metodo">Il mio metodo</a></div>
   <div class="list" id="list"></div>
   <p class="hint" id="saveWhere"></p>
-  <div class="row" style="margin:20px 0"><button class="btn sm red" id="logout">Esci dall'account</button></div>
  </div>
 </section>
 
@@ -426,6 +423,23 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
   <details><summary>Dalla parola chiave alla spiegazione</summary><div><div class="kw" id="kw"></div><div id="kwQ"></div></div></details>
   <details><summary>I cinque livelli</summary><div><div class="lv" id="lv"></div><div id="lvBox" style="margin-top:14px"></div></div></details>
   <details><summary>Sono pronto?</summary><div><div class="checks" id="pronto"></div><p class="hint" id="prontoMsg"></p></div></details>
+ </div>
+</section>
+
+<section class="view" id="v-impostazioni">
+ <header class="board"><div class="in">
+  <h1>Impostazioni</h1>
+  <p>Area del genitore, protetta dal PIN.</p>
+ </div></header>
+ <div class="wrap">
+  <div class="card" id="pinBox"></div>
+  <div id="setBox" hidden>
+   <div class="card"><h3>Qualità del prof</h3><p class="hint">Economica (Haiku) costa circa venti volte meno. Alta (Sonnet) ragiona meglio negli esercizi lunghi. Foto, indici e correzione finale dell'esposizione usano sempre la qualità alta.</p><div id="setQual"></div></div>
+   <div class="card"><h3>Collegamenti</h3><div id="setLinks"></div></div>
+   <div class="card"><h3>Lezioni</h3><label class="tog"><input type="checkbox" id="lRecOn">Attiva la registrazione delle lezioni col microfono</label></div>
+   <div class="card"><h3>Consumi</h3><p class="hint">La spesa del prof si controlla su <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="color:var(--pen)">console.anthropic.com</a> (Fatturazione e Utilizzo).</p></div>
+   <div class="card"><h3>Account</h3><div class="row"><button class="btn sm" id="pinChange">Cambia PIN</button><button class="btn sm" id="pinLock">Chiudi impostazioni</button><button class="btn sm red" id="logout">Esci dall'account</button></div></div>
+  </div>
  </div>
 </section>
 
@@ -550,11 +564,11 @@ function progress(s){const L=s.livelli||[],has=k=>(s[k]||'').trim().length>2;
 function drawPath(el,s){const ok=s?progress(s):[];const now=s?ok.indexOf(false):-1;el.innerHTML=PATH.map((p,i)=>`<span class="${ok[i]?'ok':''} ${i===now?'now':''}">${p}</span>`).join('<i>→</i>')}
 
 /* ---------- router ---------- */
-const VIEWS=['prof','compiti','lezione','libri','schede','scheda','esponi','metodo'];let curId=null,step=0;
+const VIEWS=['impostazioni','prof','compiti','lezione','libri','schede','scheda','esponi','metodo'];let curId=null,step=0;
 function route(){let v=location.hash.slice(1);if(!VIEWS.includes(v))v='prof';if(v==='scheda'&&!get(curId))v='schede';
  document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));
  document.querySelectorAll('nav.tabs a').forEach(a=>a.classList.toggle('on',a.dataset.v===(v==='scheda'||v==='metodo'||v==='lezione'?'schede':v)));
- ({prof:renderProf,compiti:renderCompiti,lezione:renderLezione,libri:renderLibri,schede:renderList,scheda:renderEd,esponi:renderEsponi,metodo:renderMetodo})[v]();window.scrollTo(0,0)}
+ ({impostazioni:renderSet,prof:renderProf,compiti:renderCompiti,lezione:renderLezione,libri:renderLibri,schede:renderList,scheda:renderEd,esponi:renderEsponi,metodo:renderMetodo})[v]();window.scrollTo(0,0)}
 addEventListener('hashchange',route);
 const go=v=>{if(location.hash==='#'+v)route();else location.hash=v};
 function opts(sel,val,none){sel.innerHTML=(none?`<option value="">${none}</option>`:'')+[...schede].sort((a,b)=>b.updated-a.updated).map(s=>`<option value="${esc(s.id)}">${esc(name(s))}</option>`).join('');sel.value=val&&get(val)?val:(none?'':schede[0]?.id||'')}
@@ -664,8 +678,8 @@ $('#books').addEventListener('change',async e=>{const id=e.target.dataset.bpdf,o
 /* collegamenti rapidi a Zaino Digitale e Axios */
 const LINKS=[['zaino','Zaino Digitale','i libri digitali'],['axios','Registro Axios','i compiti']];
 function drawLinks(){const L=ls.get('prof-links',{});document.querySelectorAll('[data-links]').forEach(el=>{
- el.innerHTML='<h3>Apri</h3><p class="hint">Si apre fuori da PROF, con il tuo accesso. Fai lo screenshot di quello che serve e torna qui.</p><div class="row">'+LINKS.map(([k,n])=>L[k]?`<a class="btn" href="${esc(L[k])}" target="_blank" rel="noopener">${n}</a>`:'').join('')+'</div>'+
- '<details style="margin-top:10px"><summary style="font-size:17px">Imposta i collegamenti</summary><div>'+LINKS.map(([k,n,w])=>`<label class="f">Indirizzo della pagina di accesso di ${n} (${w})</label><input type="text" inputmode="url" data-lk="${k}" value="${esc(L[k]||'')}" placeholder="https://…">`).join('')+'<p class="hint">Copia l\'indirizzo dalla barra del browser quando sei sulla pagina di accesso. Le password restano sui siti, PROF non le conosce.</p></div></details>'})}
+ el.innerHTML='<h3>Apri</h3><p class="hint">Si apre fuori da PROF, con il tuo accesso. Fai lo screenshot di quello che serve e torna qui.</p><div class="row">'+LINKS.map(([k,n])=>L[k]?`<a class="btn" href="${esc(L[k])}" target="_blank" rel="noopener">${n}</a>`:'').join('')+'</div>';el.hidden=!LINKS.some(([k])=>L[k])});
+ const sl=$('#setLinks');if(sl)sl.innerHTML=LINKS.map(([k,n,w])=>`<label class="f">Indirizzo della pagina di accesso di ${n} (${w})</label><input type="text" inputmode="url" data-lk="${k}" value="${esc(L[k]||'')}" placeholder="https://…">`).join('')+'<p class="hint">Copia l\'indirizzo dalla barra del browser quando sei sulla pagina di accesso. Le password restano sui siti, PROF non le conosce.</p>'}
 document.addEventListener('change',e=>{const k=e.target.dataset?.lk;if(!k)return;const v=e.target.value.trim();const L=ls.get('prof-links',{});if(v&&!/^https:\/\//i.test(v)){toast('L\'indirizzo deve iniziare con https://');return}L[k]=v;ls.set('prof-links',L);drawLinks();toast('Collegamento salvato')});
 
 /* ---------- compiti ---------- */
@@ -851,7 +865,7 @@ function renderProf(){
  ps.innerHTML='<option value="">Nessun argomento preciso</option>'+own.sort((a,b)=>b.updated-a.updated).map(x=>`<option value="${esc(x.id)}">${esc(x.titolo||'Senza titolo')}</option>`).join('');
  if(pId&&!own.some(x=>x.id===pId))pId='';ps.value=pId;
  $('#modes').innerHTML=MODES.map(m=>`<button class="chip" data-m="${m.id}" aria-pressed="${m.id===mode}">${m.t}</button>`).join('');
- $('#modeHint').textContent=MODES.find(m=>m.id===mode).h;$('#qualMat').textContent=matName(mat);$('#qual').value=C(mat).qual||'eco';drawMatComp();drawPath($('#path1'),get(pId));drawFocus();voiceUI();drawPend();$('#memBox').hidden=true;
+ $('#modeHint').textContent=MODES.find(m=>m.id===mode).h;drawMatComp();drawPath($('#path1'),get(pId));drawFocus();voiceUI();drawPend();$('#memBox').hidden=true;
  drawChat();scrollEnd(true);
  if(!sample||busy)return;
  if(pending){const t=pending;pending='';ask(t);return}
@@ -933,7 +947,6 @@ function openProf(sc,m,text,extra,mk){stopTalk();setMat(mk||(sc?matKey(sc.materi
 $('#mats').addEventListener('click',e=>{const b=e.target.closest('[data-mat]');if(!b||b.dataset.mat===mat)return;stopTalk();setMat(b.dataset.mat);renderProf()});
 $('#modes').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b||b.dataset.m===mode)return;mode=b.dataset.m;C(mat).mode=mode;note('Modalità: '+MODES.find(x=>x.id===mode).t);if(mode==='inglese')$('#voiceOn').checked=true;renderProf()});
 $('#profScheda').addEventListener('change',e=>{pId=e.target.value;C(mat).pId=pId;if(pId)note('Argomento: '+(get(pId)?.titolo||''));renderProf()});
-$('#qual').addEventListener('change',e=>{C(mat).qual=e.target.value;saveChat(mat);toast(e.target.value==='alta'?matName(mat)+': prof di qualità alta':matName(mat)+': prof economico')});
 $('#memBtn').addEventListener('click',()=>{const b=$('#memBox');if(!b.hidden){b.hidden=true;return}const m=C(mat).memoria,p=ME().memoria;
  b.innerHTML='<span class="who">Appunti del prof · '+esc(matName(mat))+'</span>'+(m?fmt(m):'<span class="mute">Il prof scrive i suoi appunti dopo qualche scambio di messaggi.</span>')+(p?'<span class="who" style="margin-top:10px">Cose che Adriano gli ha raccontato</span>'+fmt(p):'');b.hidden=false});
 $('#older').addEventListener('click',async()=>{const ids=arcIdx[mat]||[];arcs[mat]=arcs[mat]||[];for(const id of ids){if(arcs[mat].some(a=>a.id===id))continue;let msgs=null;try{msgs=await idb.get('arc-'+id)}catch(e){}if(!msgs&&col){try{const d=await col.doc(id).get();if(d.exists)msgs=d.data().messages}catch(e){}}if(msgs)arcs[mat].push({id,messages:msgs})}
@@ -1084,6 +1097,24 @@ const GUIDA=[
 function renderMetodo(){drawPath($('#path3'),null);if($('#metodo').children.length)return;
  $('#metodo').innerHTML=GUIDA.map(g=>`<details><summary>${g[0]}</summary><div>${g[1]}</div></details>`).join('')+'<div class="card"><h3>Il mio obiettivo</h3><p>Non devo studiare soltanto per ricordare. Devo comprendere, organizzare e spiegare ciò che ho imparato con parole mie.</p><p class="note">Non devo essere veloce. Devo essere chiaro. Non devo essere perfetto al primo tentativo. Devo allenarmi per migliorare.</p></div>'}
 
+/* ---------- impostazioni del genitore ---------- */
+let setDoc=null,pinHash=ls.get('prof-pin',''),setOpen=false;
+const sha=async t=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('prof:'+t)))).map(b=>b.toString(16).padStart(2,'0')).join('');
+function savePin(h){pinHash=h;ls.set('prof-pin',h);if(setDoc)setDoc.set({pin:h}).catch(()=>{})}
+function renderSet(){const box=$('#pinBox');$('#setBox').hidden=!setOpen;box.hidden=setOpen;if(setOpen){drawSet();return}
+ box.innerHTML=pinHash?`<h3>Inserisci il PIN</h3><input type="password" inputmode="numeric" id="pinIn" placeholder="PIN" style="max-width:200px"><div class="row" style="margin-top:10px"><button class="btn full" id="pinOk">Apri</button></div><p class="hint" id="pinMsg"></p>`
+ :`<h3>Crea il PIN del genitore</h3><p class="hint">Da 4 a 8 cifre. Serve per aprire queste impostazioni: non dirlo ad Adriano.</p><input type="password" inputmode="numeric" id="pinIn" placeholder="Nuovo PIN" style="max-width:200px"><input type="password" inputmode="numeric" id="pinIn2" placeholder="Ripeti il PIN" style="max-width:200px;margin-top:8px"><div class="row" style="margin-top:10px"><button class="btn full" id="pinOk">Salva il PIN</button></div><p class="hint" id="pinMsg"></p>`}
+$('#pinBox').addEventListener('click',async e=>{if(e.target.id!=='pinOk')return;const v=$('#pinIn').value.trim(),m=$('#pinMsg');
+ if(!/^\d{4,8}$/.test(v)){m.textContent='Il PIN deve avere da 4 a 8 cifre.';return}
+ if(!pinHash){if(v!==$('#pinIn2').value.trim()){m.textContent='I due PIN non coincidono.';return}savePin(await sha(v));setOpen=true;renderSet();return}
+ if(await sha(v)===pinHash){setOpen=true;renderSet()}else{m.textContent='PIN sbagliato.';$('#pinIn').value=''}});
+$('#pinLock').addEventListener('click',()=>{setOpen=false;go('prof')});
+$('#pinChange').addEventListener('click',()=>{pinHash='';setOpen=false;renderSet()});
+function drawSet(){drawLinks();$('#setQual').innerHTML=MATERIE.filter(m=>m[0]!=='organizzazione').map(([k,n])=>`<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)"><span>${esc(n)}</span><select data-q="${k}" style="width:auto"><option value="eco">Economica (Haiku)</option><option value="alta">Alta (Sonnet)</option></select></div>`).join('');
+ document.querySelectorAll('#setQual [data-q]').forEach(x=>x.value=C(x.dataset.q).qual||'eco')}
+$('#setQual').addEventListener('change',e=>{const k=e.target.dataset.q;if(!k)return;C(k).qual=e.target.value;saveChat(k);toast(matName(k)+': '+(e.target.value==='alta'?'qualità alta':'economica'))});
+addEventListener('hashchange',()=>{if(location.hash!=='#impostazioni')setOpen=false});
+
 /* ---------- avvio ---------- */
 $('#logout').addEventListener('click',()=>{if(window.__logout)window.__logout()});
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -1100,6 +1131,7 @@ const use=n=>{try{return Promise.resolve(window.claude?.use?.(n)).catch(()=>null
   for(const k of Object.keys(chats))if(!snap.docs.some(x=>x.id==='chat-'+k))saveChat(k);
   for(const l of lezioni)if(!snap.docs.some(x=>x.id==='lez-'+l.id))saveLez(l);lezioni.sort((a,b)=>b.date-a.date);ls.set('prof-lezioni-v1',lezioni);
   ls.set('prof-arcs',arcIdx);ls.set('prof-chats-v1',chats);setMat(mat);
+  try{setDoc=c.doc('impostazioni');const sd=await lim(setDoc.get());if(sd.exists&&sd.data().pin){pinHash=sd.data().pin;ls.set('prof-pin',pinHash)}else if(pinHash)setDoc.set({pin:pinHash}).catch(()=>{})}catch(e){}
   try{const cd=c.doc('compiti');const cs=await lim(cd.get());ccol=cd;const items=cs.exists?(cs.data().items||[]):[];const ids2=new Set(items.map(i=>i.id));compiti=[...items.map(i=>JSON.parse(JSON.stringify(i))),...compiti.filter(i=>!ids2.has(i.id))];saveCompiti()}catch(e){ccol=null}
   const ids=new Set(remote.map(r=>r.id));const extra=schede.filter(s=>!ids.has(s.id));schede=[...remote,...extra];extra.forEach(s=>save(s,true));ls.set('prof-schede-v1',schede)}catch(e){col=null}}
  const v=location.hash.slice(1);if(v!=='scheda'&&v!=='esponi')route()})();
