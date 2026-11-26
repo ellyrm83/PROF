@@ -288,7 +288,7 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
  <div class="wrap">
   <div class="card">
    <div class="row"><label class="btn hi" for="cShot">Carica screenshot dei compiti</label><label class="btn" for="cCam">Fai una foto</label><button class="btn" id="cPlan">Piano di oggi col prof</button></div>
-   <input type="file" id="cShot" accept="image/*,application/pdf" multiple hidden>
+   <input type="file" id="cShot" accept="image/*,application/pdf,video/*" multiple hidden>
    <input type="file" id="cCam" accept="image/*" capture="environment" hidden>
    <p class="hint" id="cStatus">Su Axios apri <b>Compiti</b> (o l'agenda), fai lo screenshot della pagina e caricalo. Puoi caricarne più di uno.</p>
   </div>
@@ -310,7 +310,7 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
  <div class="wrap">
   <div class="card">
    <div class="row"><label class="btn hi" for="vShot">Carica screenshot dei voti</label><button class="btn" id="vPlan">Piano di ripasso col prof</button></div>
-   <input type="file" id="vShot" accept="image/*,application/pdf" multiple hidden>
+   <input type="file" id="vShot" accept="image/*,application/pdf,video/*" multiple hidden>
    <input type="file" id="vVer" accept="image/*,application/pdf" multiple hidden>
    <p class="hint" id="vStatus">Su Axios apri <b>Voti</b>, fai lo screenshot e caricalo: il prof legge materia, data, tipo e voto.</p>
   </div>
@@ -338,9 +338,9 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
  <div class="wrap">
   <div class="card" id="progCard">
    <h3>Programma svolto in classe</h3>
-   <p class="hint">Su Axios apri <b>Registro di classe → Argomenti delle lezioni</b> (o le lezioni del giorno), fai lo screenshot e caricalo: il prof saprà a che punto è la classe in ogni materia.</p>
-   <div class="row"><label class="btn hi" for="pShot">Carica screenshot delle lezioni</label></div>
-   <input type="file" id="pShot" accept="image/*,application/pdf" multiple hidden>
+   <p class="hint">Su Axios apri <b>Registro di classe → Argomenti delle lezioni</b>, poi carica gli screenshot oppure un <b>video</b> mentre scorri la pagina (anche registrazione dello schermo): il prof saprà a che punto è la classe in ogni materia.</p>
+   <div class="row"><label class="btn hi" for="pShot">Carica screenshot o video delle lezioni</label></div>
+   <input type="file" id="pShot" accept="image/*,application/pdf,video/*" multiple hidden>
    <p class="hint" id="pStatus"></p>
    <div id="pList"></div>
    <details><summary>Aggiungi un argomento a mano</summary><div>
@@ -630,7 +630,19 @@ async function renderPage(doc,i){const pg=await doc.getPage(i);const v1=pg.getVi
 async function pdfPages(file,max){const lib=await pdfjs();const doc=await lib.getDocument({data:await file.arrayBuffer()}).promise;const out=[];
  for(let i=1;i<=Math.min(doc.numPages,max);i++){out.push({blob:await renderPage(doc,i),name:file.name.replace(/\.pdf$/i,'')+' p.'+i})}
  if(doc.numPages>max)toast(`Ho preso le prime ${max} pagine del PDF`);return out}
+// video (registrazione dello schermo o ripresa del registro mentre scorri): prende i fotogrammi diversi tra loro, senza audio
+async function videoFrames(f,max=40){const url=URL.createObjectURL(f),v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='auto';v.src=url;
+ try{await new Promise((res,rej)=>{v.onloadedmetadata=res;v.onerror=rej;setTimeout(rej,15000)});const dur=isFinite(v.duration)?v.duration:0;if(!dur)throw 0;
+  const W=Math.min(1600,v.videoWidth||1280),H=Math.round(W*(v.videoHeight||720)/(v.videoWidth||1280));const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');
+  const sm=document.createElement('canvas');sm.width=32;sm.height=32;const sx=sm.getContext('2d',{willReadFrequently:true});
+  const out=[];let prev=null;const step=Math.max(1,dur/80);
+  for(let t=0.3;t<dur&&out.length<max;t+=step){await new Promise(r=>{v.onseeked=r;v.currentTime=t;setTimeout(r,3000)});
+   sx.drawImage(v,0,0,32,32);const d=sx.getImageData(0,0,32,32).data,g=[];for(let i=0;i<d.length;i+=4)g.push((d[i]+d[i+1]+d[i+2])/3);
+   const diff=prev?g.reduce((a,x,i)=>a+Math.abs(x-prev[i]),0)/g.length:999;if(diff<9)continue;prev=g;
+   cx.drawImage(v,0,0,W,H);const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',.85));if(b)out.push({blob:b,name:'fotogramma '+Math.round(t)+'s'})}
+  return out}catch(e){toast('Non riesco ad aprire il video: prova con degli screenshot');return []}finally{URL.revokeObjectURL(url)}}
 async function filesToImages(files,maxPdf=12){const out=[];for(const f of files){
+ if(f.type.startsWith('video/')||/\.(mov|mp4|m4v|webm|3gp)$/i.test(f.name)){toast('Guardo il video…');out.push(...await videoFrames(f));continue}
  if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){try{out.push(...await pdfPages(f,maxPdf))}catch(e){toast('Non riesco ad aprire il PDF')}}
  else if(f.type.startsWith('image/')||/\.(jpe?g|png|heic|webp)$/i.test(f.name)){try{out.push({blob:await toJpeg(f),name:f.name.replace(/\.\w+$/,'')})}catch(e){toast('Non riesco ad aprire '+f.name)}}}return out}
 async function storeImg(blob,nm,kind){let id='',src='local';
@@ -781,12 +793,12 @@ function compitiTxt(){const L=compiti.filter(c=>!c.done&&dayDiff(c.consegna)>=-1
  const d=new Date();return `OGGI È ${d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.\nCOMPITI DA FARE (dal registro):\n`+(L.length?L.map(c=>`- [${c.consegna||'senza data'}] ${c.materia}: ${c.testo}${c.tipo?' ('+c.tipo+')':''}`).join('\n'):'nessun compito caricato')}
 async function readCompiti(files){const st=$('#cStatus');if(!sample){$('#noAI').hidden=false;st.textContent='Il prof non è attivo: puoi aggiungere i compiti a mano qui sotto.';return}
  if(!imgOK){st.textContent='Il prof non può leggere le immagini qui: aggiungi i compiti a mano.';return}
- st.textContent='Preparo le immagini…';const imgs=await filesToImages(files,6);if(!imgs.length){st.textContent='';return}st.textContent='Il prof sta leggendo i compiti…';
+ st.textContent='Preparo le immagini…';const imgs=await filesToImages(files,6);if(!imgs.length){st.textContent='';return}
  const pr=`Queste immagini sono screenshot o foto dei compiti assegnati, presi dal registro elettronico Axios di uno studente di prima liceo scientifico. Oggi è ${today()} (${new Date().toLocaleDateString('it-IT',{weekday:'long'})}).
 Estrai OGNI compito. Rispondi SOLO con JSON valido: {"compiti":[{"materia":"Storia","consegna":"YYYY-MM-DD","testo":"descrizione completa come scritta, con pagine ed esercizi","tipo":"studio|esercizi|verifica|interrogazione|lettura|altro","argomento":"argomento breve se si capisce, altrimenti vuoto","pagine":"es. 34-38 o vuoto"}]}
 Regole: la data di consegna è quella per cui il compito va fatto (se c'è solo la data di assegnazione o un giorno della settimana, ricava la data futura più vicina; se non si capisce lascia ""). Non inventare compiti né pagine. Se un compito contiene più parti della stessa materia tienile insieme.
 ${libri.length?'Libri dello studente: '+libri.map(b=>b.titolo+' ('+b.materia+')').join(', '):''}`;
- try{const r=await ai(pr,{images:imgs.map(x=>x.blob),complex:true});const j=parseJSON(r.text);const L=j?.compiti||[];let n=0;
+ try{const L=[];for(let i=0;i<imgs.length;i+=8){st.textContent=`Il prof sta leggendo i compiti… ${imgs.length>8?Math.min(i+8,imgs.length)+' di '+imgs.length:''}`;const r=await ai(pr,{images:imgs.slice(i,i+8).map(x=>x.blob),complex:true});L.push(...(parseJSON(r.text)?.compiti||[]))}let n=0;
   for(const c of L){if(!c.testo)continue;const key=(c.materia+'|'+c.consegna+'|'+c.testo).toLowerCase().replace(/\s+/g,' ');
    if(compiti.some(x=>(x.materia+'|'+x.consegna+'|'+x.testo).toLowerCase().replace(/\s+/g,' ')===key))continue;
    compiti.push({id:'c'+uid(),materia:String(c.materia||''),consegna:/^\d{4}-\d{2}-\d{2}$/.test(c.consegna)?c.consegna:'',testo:String(c.testo),tipo:String(c.tipo||''),argomento:String(c.argomento||''),pagine:String(c.pagine||''),done:false,schedaId:'',added:Date.now()});n++}
@@ -1063,11 +1075,11 @@ function votiTxt(k){const keys=k&&k!=='organizzazione'?[k]:[...new Set(voti.map(
  return t+'\nCOME USARLI: dai la precedenza agli argomenti con voti sotto 6 o sotto l\'obiettivo, agli errori ricorrenti e alle materie con priorità alta; quando un argomento è collegato a un voto basso, ripassalo con più esercizi e domande; se un voto è migliorato, faglielo notare.'}
 function vOptions(){$('#vVal').innerHTML=VOTI_L.map(l=>`<option ${l==='6'?'selected':''}>${l}</option>`).join('')}
 async function readVoti(files){const st=$('#vStatus');if(!sample){$('#noAI').hidden=false;st.textContent='Il prof non è attivo: puoi aggiungere i voti a mano qui sotto.';return}
- st.textContent='Preparo le immagini…';const imgs=await filesToImages(files,6);if(!imgs.length){st.textContent='';return}st.textContent='Il prof sta leggendo i voti…';
+ st.textContent='Preparo le immagini…';const imgs=await filesToImages(files,6);if(!imgs.length){st.textContent='';return}
  const pr=`Queste immagini sono screenshot dei VOTI dal registro elettronico Axios di uno studente di prima liceo scientifico. Oggi è ${today()}.
 Estrai OGNI voto. Rispondi SOLO con JSON valido: {"voti":[{"materia":"Matematica","data":"YYYY-MM-DD","voto":"6+","tipo":"scritto|orale|pratico|test","argomento":"argomento o descrizione se c'è, altrimenti vuoto","commento":"commento del docente se c'è"}]}
 Regole: copia il voto come scritto (6, 6+, 6-, 6½, 7/8 diventa "7½"). Non inventare voti. Se l'anno manca, usa l'anno scolastico in corso.`;
- try{const r=await ai(pr,{images:imgs.map(x=>x.blob),complex:true});const L=parseJSON(r.text)?.voti||[];let n=0;
+ try{const L=[];for(let i=0;i<imgs.length;i+=8){st.textContent=`Il prof sta leggendo i voti… ${imgs.length>8?Math.min(i+8,imgs.length)+' di '+imgs.length:''}`;const r=await ai(pr,{images:imgs.slice(i,i+8).map(x=>x.blob),complex:true});L.push(...(parseJSON(r.text)?.voti||[]))}let n=0;
   for(const v of L){const lab=String(v.voto||'').trim(),num=vNum(lab);if(isNaN(num))continue;const key=(v.materia+'|'+v.data+'|'+lab+'|'+v.tipo).toLowerCase();
    if(voti.some(x=>(x.materia+'|'+x.data+'|'+x.label+'|'+x.tipo).toLowerCase()===key))continue;
    voti.push({id:'v'+uid(),materia:String(v.materia||''),data:/^\d{4}-\d{2}-\d{2}$/.test(v.data)?v.data:'',label:lab,n:num,tipo:String(v.tipo||''),argomento:String(v.argomento||''),note:String(v.commento||''),errori:'',peso:1,added:Date.now()});n++}
@@ -1122,11 +1134,11 @@ function programmaTxt(k){const keys=k&&k!=='organizzazione'?[k]:[...new Set(prog
   t+=`\n# ${matName(m)} (ultimo argomento: ${L[L.length-1].argomento})\n`+L.slice(k&&k!=='organizzazione'?-20:-5).map(x=>`- ${x.data||'?'}: ${x.argomento}`).join('\n')}
  return t}
 async function readProgramma(files){const st=$('#pStatus');if(!sample){$('#noAI').hidden=false;st.textContent='Il prof non è attivo: aggiungi gli argomenti a mano.';return}
- st.textContent='Preparo le immagini…';const imgs=await filesToImages(files,6);if(!imgs.length){st.textContent='';return}st.textContent='Il prof sta leggendo le lezioni…';
+ st.textContent='Preparo le immagini…';const imgs=await filesToImages(files,6);if(!imgs.length){st.textContent='';return}
  const pr=`Queste immagini sono screenshot del registro elettronico Axios con gli ARGOMENTI delle lezioni svolte in classe (prima liceo scientifico). Oggi è ${today()}.
 Estrai OGNI lezione con il suo argomento. Rispondi SOLO con JSON valido: {"argomenti":[{"materia":"Storia","data":"YYYY-MM-DD","argomento":"argomento come scritto"}]}
 Regole: non inventare; ignora assenze, firme e note disciplinari; se una lezione è solo "verifica" o "interrogazione" scrivilo così.`;
- try{const r=await ai(pr,{images:imgs.map(x=>x.blob),complex:true});const L=parseJSON(r.text)?.argomenti||[];let n=0;
+ try{const L=[];for(let i=0;i<imgs.length;i+=8){st.textContent=`Il prof sta leggendo le lezioni… ${imgs.length>8?Math.min(i+8,imgs.length)+' di '+imgs.length:''}`;const r=await ai(pr,{images:imgs.slice(i,i+8).map(x=>x.blob),complex:true});L.push(...(parseJSON(r.text)?.argomenti||[]))}let n=0;
   for(const a of L){if(!a.argomento)continue;const key=(a.materia+'|'+a.data+'|'+a.argomento).toLowerCase().replace(/\s+/g,' ');
    if(programma.some(x=>(x.materia+'|'+x.data+'|'+x.argomento).toLowerCase().replace(/\s+/g,' ')===key))continue;
    programma.push({id:'p'+uid(),materia:String(a.materia||''),data:/^\d{4}-\d{2}-\d{2}$/.test(a.data)?a.data:'',argomento:String(a.argomento),added:Date.now()});n++}
