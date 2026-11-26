@@ -301,6 +301,12 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
  </div></header>
  <div class="wrap">
   <div class="card links" data-links></div>
+  <div class="card">
+   <h3>Elenco dei libri della classe</h3>
+   <p class="hint">Carica il PDF (o una foto) con l'elenco dei libri adottati: il prof li aggiunge tutti, materia per materia. Quelli già presenti non vengono duplicati.</p>
+   <div class="row"><label class="btn hi" for="lbFile">Carica l'elenco dei libri</label><span class="hint" id="lbStatus"></span></div>
+   <input type="file" id="lbFile" accept="application/pdf,image/*" multiple hidden>
+  </div>
   <div class="card" id="addBook">
    <h3>Aggiungi un libro</h3>
    <div class="row" style="gap:10px">
@@ -580,6 +586,22 @@ $('#bSave').addEventListener('click',async()=>{const mat=$('#bMat').value.trim()
  const pagine=[];for(const x of bImgs)pagine.push(await storeImg(x.blob,x.name,'Indice'));
  const b={id:'b'+uid(),materia:mat,titolo:tit,capitoli:caps.slice(0,80),pagine,updated:Date.now()};libri.push(b);saveBook(b);
  bImgs=[];drawBThumbs();$('#bText').value='';$('#bTit').value='';$('#bStatus').textContent='';btn.disabled=false;toast(`Indice salvato: ${caps.length} capitoli`);renderLibri()});
+async function pdfText(file,max){try{const lib=await pdfjs();const doc=await lib.getDocument({data:await file.arrayBuffer()}).promise;let t='';for(let i=1;i<=Math.min(doc.numPages,max);i++){const tc=await (await doc.getPage(i)).getTextContent();t+=tc.items.map(x=>x.str+(x.hasEOL?'\n':' ')).join('')+'\n'}return t.trim()}catch(e){return ''}}
+$('#lbFile').addEventListener('change',async e=>{const files=[...e.target.files];e.target.value='';const st=$('#lbStatus');
+ if(!sample){$('#noAI').hidden=false;st.textContent='Il prof non è attivo.';return}
+ st.textContent='Leggo l\'elenco…';let txt='',imgs=[];
+ for(const f of files){if(/pdf/i.test(f.type)||/\.pdf$/i.test(f.name)){const t=await pdfText(f,8);if(t.length>150)txt+=t+'\n';else imgs.push(...await filesToImages([f],6))}else imgs.push(...await filesToImages([f],6))}
+ st.textContent='Il prof sta leggendo l\'elenco dei libri…';
+ const pr=`Questo è l'elenco dei libri di testo adottati da una classe di liceo italiano. Estrai OGNI libro.
+Rispondi SOLO con JSON valido: {"libri":[{"materia":"Storia e geografia","titolo":"Titolo – Volume","autori":"","isbn":"13 cifre senza trattini o vuoto","facoltativo":false}]}
+Regole: materia come scritta nell'elenco; nel titolo includi volume o edizione se indicati; non inventare nulla; ignora prezzi e totali.
+${txt?'Testo dell\'elenco:\n'+txt.slice(0,30000):''}`;
+ try{const r=await ai(pr,{images:imgs.map(x=>x.blob),complex:true});const L=parseJSON(r.text)?.libri||[];let n=0;
+  for(const x of L){if(!x?.titolo)continue;const isbn=String(x.isbn||'').replace(/\D/g,'');const t=String(x.titolo).trim();
+   if(libri.some(b=>(isbn&&b.isbn===isbn)||(b.titolo||'').toLowerCase()===t.toLowerCase()))continue;
+   const b={id:'b'+(isbn||uid()),materia:String(x.materia||''),titolo:t,isbn,autori:String(x.autori||''),facoltativo:!!x.facoltativo,capitoli:[],pagine:[],updated:Date.now()};libri.push(b);saveBook(b);n++}
+  st.textContent=n?`Aggiunti ${n} libri. Ora puoi caricare l'indice di ognuno.`:L.length?'Questi libri c\'erano già tutti.':'Non ho trovato libri: prova con un file più leggibile.';renderLibri()}
+ catch(er){st.textContent=aiErr(er)}});
 function renderLibri(){drawLinks();const L=[...libri].sort((a,b)=>(a.materia||'').localeCompare(b.materia||''));
  $('#books').innerHTML=L.length?L.map(b=>`<details class="card" style="padding:0"><summary>${esc(b.titolo)} <span class="mute" style="font-family:inherit;font-size:15px;font-weight:400">${esc(b.materia)}${(b.capitoli||[]).length?'':' · indice da caricare'}</span></summary><div>
  ${b.isbn?`<p class="hint">ISBN ${esc(b.isbn)}</p>`:''}
