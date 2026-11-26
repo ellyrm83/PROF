@@ -435,6 +435,12 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
   <div class="card" id="pinBox"></div>
   <div id="setBox" hidden>
    <div class="card"><h3>Qualità del prof</h3><p class="hint">Economica (Haiku) costa circa venti volte meno. Alta (Sonnet) ragiona meglio negli esercizi lunghi. Foto, indici e correzione finale dell'esposizione usano sempre la qualità alta.</p><div id="setQual"></div></div>
+   <div class="card"><h3>Voce del prof</h3><p class="hint">Sono le voci installate su questo dispositivo: prova e scegli la più naturale. La scelta vale per questo dispositivo.</p>
+    <label class="f" for="vzIt">Voce italiana</label><select id="vzIt"></select>
+    <label class="f" for="vzEn">Voce inglese (English speaking)</label><select id="vzEn"></select>
+    <div class="row" style="margin-top:10px"><label class="hint" for="vzRate">Velocità</label><input type="range" id="vzRate" min="0.8" max="1.2" step="0.05" style="flex:1"><label class="hint" for="vzPitch">Tono</label><input type="range" id="vzPitch" min="0.8" max="1.2" step="0.05" style="flex:1"></div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" id="vzTryIt">Prova italiano</button><button class="btn sm" id="vzTryEn">Prova inglese</button></div>
+    <p class="hint" id="vzNote"></p></div>
    <div class="card"><h3>Collegamenti</h3><div id="setLinks"></div></div>
    <div class="card"><h3>Lezioni</h3><label class="tog"><input type="checkbox" id="lRecOn">Attiva la registrazione delle lezioni col microfono</label></div>
    <div class="card"><h3>Consumi</h3><p class="hint">La spesa del prof si controlla su <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="color:var(--pen)">console.anthropic.com</a> (Fatturazione e Utilizzo).</p></div>
@@ -969,10 +975,10 @@ function voiceLines(text,lang){const parts=text.replace(/\*\*/g,'').split(/\n+/)
 let vz=ls.get('prof-vz',{voice:'rounded',rate:1});$('#vVoice').value=vz.voice;$('#vRate').value=String(vz.rate);
 $('#vVoice').addEventListener('change',e=>{vz.voice=e.target.value;ls.set('prof-vz',vz)});$('#vRate').addEventListener('change',e=>{vz.rate=+e.target.value;ls.set('prof-vz',vz);tts?.setRate?.(vz.rate)});
 $('#vTry').addEventListener('click',()=>speakOut('Ciao Adriano! Sono il tuo prof. Allora, che cosa studiamo oggi?','it'));
-function bestVoice(lang){const V=('speechSynthesis' in window)?speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith(lang)):[];return V.sort((a,b)=>sc(b)-sc(a))[0]||null;function sc(v){return (/premium|enhanced|natural|neural|siri|google/i.test(v.name)?10:0)+(/federica|alice|luca|elsa|diego|paola|serena|daniel|kate|arthur/i.test(v.name)?3:0)+(v.localService?0:1)}}
+function bestVoice(lang){const pick=ls.get('prof-vname-'+lang,'');if(pick&&'speechSynthesis' in window){const v=speechSynthesis.getVoices().find(x=>x.name===pick);if(v)return v}const V=('speechSynthesis' in window)?speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith(lang)):[];return V.sort((a,b)=>sc(b)-sc(a))[0]||null;function sc(v){return (/premium|enhanced|natural|neural|siri|google/i.test(v.name)?10:0)+(/federica|alice|luca|elsa|diego|paola|serena|daniel|kate|arthur/i.test(v.name)?3:0)+(v.localService?0:1)}}
 function speakOut(text,lang){const L=voiceLines(text,lang);if(!L.length)return;
  if(tts){tts.speak(L,{voice:vz.voice,rate:(mode==='inglese'?0.92:1)*vz.rate}).catch(e=>{if(e?.code==='not_granted'){tts=null;toast('Voce disattivata per questa app')}else if(e?.code==='no_gesture')toast('Tocca "Ascolta" per sentire il prof')});return}
- if('speechSynthesis' in window){const ss=speechSynthesis;if(ss.speaking||ss.pending)ss.cancel();try{ss.resume()}catch(e){}L.forEach(l=>{const u=new SpeechSynthesisUtterance(l.text);u.lang=l.language==='en'?'en-GB':'it-IT';const bv=bestVoice(l.language==='en'?'en':'it');if(bv)u.voice=bv;u.rate=(l.language==='en'?0.92:1)*vz.rate;u.pitch=1;u.onerror=ev=>{if(ev.error!=='interrupted'&&ev.error!=='canceled')toast('La voce non parte: controlla il volume e che il telefono non sia in silenzioso')};u.onstart=()=>$('#stopVoice').hidden=false;u.onend=()=>{if(!speechSynthesis.speaking)$('#stopVoice').hidden=true};speechSynthesis.speak(u)})}}
+ if('speechSynthesis' in window){const ss=speechSynthesis;if(ss.speaking||ss.pending)ss.cancel();try{ss.resume()}catch(e){}L.forEach(l=>{const u=new SpeechSynthesisUtterance(l.text);u.lang=l.language==='en'?'en-GB':'it-IT';const bv=bestVoice(l.language==='en'?'en':'it');if(bv)u.voice=bv;u.rate=(l.language==='en'?0.92:1)*vz.rate*(+ls.get('prof-vrate',1));u.pitch=+ls.get('prof-vpitch',1);u.onerror=ev=>{if(ev.error!=='interrupted'&&ev.error!=='canceled')toast('La voce non parte: controlla il volume e che il telefono non sia in silenzioso')};u.onstart=()=>$('#stopVoice').hidden=false;u.onend=()=>{if(!speechSynthesis.speaking)$('#stopVoice').hidden=true};speechSynthesis.speak(u)})}}
 function shush(){tts?.stop().catch(()=>{});if('speechSynthesis' in window)speechSynthesis.cancel();$('#stopVoice').hidden=true}
 $('#stopVoice').addEventListener('click',shush);
 function voiceUI(){const on=$('#voiceOn').checked;$('#voiceSet').hidden=!on||!canSpeak();$('#vVoice').hidden=$('#vVoice').previousElementSibling.hidden=!tts;$('#talk').hidden=!(on&&dict);$('#mic').hidden=!dict;const h=$('#voiceHint');
@@ -1111,7 +1117,18 @@ $('#pinBox').addEventListener('click',async e=>{if(e.target.id!=='pinOk')return;
  if(await sha(v)===pinHash){setOpen=true;renderSet()}else{m.textContent='PIN sbagliato.';$('#pinIn').value=''}});
 $('#pinLock').addEventListener('click',()=>{setOpen=false;go('prof')});
 $('#pinChange').addEventListener('click',()=>{pinHash='';setOpen=false;renderSet()});
-function drawSet(){drawLinks();$('#setQual').innerHTML=MATERIE.filter(m=>m[0]!=='organizzazione').map(([k,n])=>`<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)"><span>${esc(n)}</span><select data-q="${k}" style="width:auto"><option value="eco">Economica (Haiku)</option><option value="alta">Alta (Sonnet)</option></select></div>`).join('');
+function vzFill(){if(!('speechSynthesis' in window)){$('#vzNote').textContent='Questo browser non ha la sintesi vocale.';return}const V=speechSynthesis.getVoices();
+ const q=v=>(/natural|neural|premium|enhanced|online|google|wavenet/i.test(v.name)?' ★ consigliata':'')+(v.localService?'':' (online)');
+ for(const [id,lg] of [['#vzIt','it'],['#vzEn','en']]){const L=V.filter(v=>v.lang.toLowerCase().startsWith(lg));const sel=$(id);
+  sel.innerHTML='<option value="">Automatica</option>'+L.map(v=>`<option value="${esc(v.name)}">${esc(v.name)} · ${esc(v.lang)}${q(v)}</option>`).join('');sel.value=ls.get('prof-vname-'+lg,'')}
+ $('#vzRate').value=ls.get('prof-vrate',1);$('#vzPitch').value=ls.get('prof-vpitch',1);
+ $('#vzNote').textContent=V.filter(v=>v.lang.toLowerCase().startsWith('it')).length<=1?'Ci sono poche voci: scaricane altre dalle impostazioni del dispositivo (vedi le istruzioni che ti ha dato Claude).':''}
+if('speechSynthesis' in window)speechSynthesis.addEventListener?.('voiceschanged',()=>{if(location.hash==='#impostazioni'&&setOpen)vzFill()});
+$('#vzIt').addEventListener('change',e=>ls.set('prof-vname-it',e.target.value));$('#vzEn').addEventListener('change',e=>ls.set('prof-vname-en',e.target.value));
+$('#vzRate').addEventListener('change',e=>ls.set('prof-vrate',+e.target.value));$('#vzPitch').addEventListener('change',e=>ls.set('prof-vpitch',+e.target.value));
+$('#vzTryIt').addEventListener('click',()=>speakOut('Ciao Adriano! Sono il tuo prof. Oggi ripassiamo insieme, un passo alla volta. Pronto?','it'));
+$('#vzTryEn').addEventListener('click',()=>speakOut('Hi Adriano! Let\'s practise some English together. How was your day?','en'));
+function drawSet(){drawLinks();vzFill();$('#setQual').innerHTML=MATERIE.filter(m=>m[0]!=='organizzazione').map(([k,n])=>`<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line)"><span>${esc(n)}</span><select data-q="${k}" style="width:auto"><option value="eco">Economica (Haiku)</option><option value="alta">Alta (Sonnet)</option></select></div>`).join('');
  document.querySelectorAll('#setQual [data-q]').forEach(x=>x.value=C(x.dataset.q).qual||'eco')}
 $('#setQual').addEventListener('change',e=>{const k=e.target.dataset.q;if(!k)return;C(k).qual=e.target.value;saveChat(k);toast(matName(k)+': '+(e.target.value==='alta'?'qualità alta':'economica'))});
 addEventListener('hashchange',()=>{if(location.hash!=='#impostazioni')setOpen=false});
