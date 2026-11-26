@@ -26,13 +26,15 @@
 
   function login(msg) {
     gate(`<h1>PROF</h1><p>Entra con l'account di PROF. Su tutti i dispositivi si usa lo stesso account: così Adriano ritrova chat, schede e compiti.</p>
-      <label for="gem">Email</label><input id="gem" type="email" autocomplete="email">
-      <label for="gpw">Password (almeno 6 caratteri)</label><input id="gpw" type="password" autocomplete="current-password">
+      <label for="gem">Email</label><input id="gem" type="email" autocomplete="off" autocapitalize="off" spellcheck="false" style="background:#fff;color:#18202a;-webkit-text-fill-color:#18202a">
+      <label for="gpw">Password (almeno 6 caratteri)</label><input id="gpw" type="password" autocomplete="new-password" style="background:#fff;color:#18202a;-webkit-text-fill-color:#18202a">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:400;margin-top:8px"><input type="checkbox" id="gshow" style="width:22px;height:22px">Mostra la password</label>
       <button class="a" id="gin">Entra</button><button class="b" id="gup">Crea l'account (solo la prima volta)</button>
       <p class="err" id="gerr">${msg || ""}</p><p class="s"><button class="b" id="grs" style="min-height:36px;font-size:14px;margin:0">Password dimenticata</button></p>`);
     whenDom(() => {
       const em = () => document.getElementById("gem").value.trim(), pw = () => document.getElementById("gpw").value;
-      const fail = e => { const m = { "auth/invalid-credential": "Email o password non corretti.", "auth/wrong-password": "Password non corretta.", "auth/user-not-found": "Account non trovato.", "auth/email-already-in-use": "Questa email ha già un account: tocca Entra.", "auth/weak-password": "La password deve avere almeno 6 caratteri.", "auth/invalid-email": "Email non valida.", "auth/network-request-failed": "Nessuna connessione." }[e && e.code]; document.getElementById("gerr").textContent = m || "Errore: " + (e && e.message || e); };
+      const fail = e => { const c = e && e.code || ""; const m = { "auth/invalid-credential": "Email o password non corretti. Se è la prima volta, tocca «Crea l'account».", "auth/wrong-password": "Password non corretta.", "auth/user-not-found": "Account non trovato: tocca «Crea l'account».", "auth/email-already-in-use": "Questa email ha già un account: tocca «Entra».", "auth/weak-password": "La password deve avere almeno 6 caratteri.", "auth/invalid-email": "L'email non è scritta bene: controlla che non ci siano spazi o errori.", "auth/missing-password": "Scrivi la password.", "auth/operation-not-allowed": "In Firebase l'accesso con email e password non è attivo (Authentication → Metodo di accesso).", "auth/unauthorized-domain": "In Firebase manca il dominio ellyrm83.github.io (Authentication → Impostazioni → Domini autorizzati).", "auth/network-request-failed": "Nessuna connessione.", "auth/too-many-requests": "Troppi tentativi: aspetta qualche minuto." }[c]; document.getElementById("gerr").textContent = (m || "Errore: " + (e && e.message || e)) + (c ? " [" + c + "]" : ""); };
+      document.getElementById("gshow").onchange = e => { document.getElementById("gpw").type = e.target.checked ? "text" : "password"; };
       document.getElementById("gin").onclick = () => auth.signInWithEmailAndPassword(em(), pw()).catch(fail);
       document.getElementById("gup").onclick = () => auth.createUserWithEmailAndPassword(em(), pw()).catch(fail);
       document.getElementById("grs").onclick = () => { if (!em()) { document.getElementById("gerr").textContent = "Scrivi prima l'email."; return; } auth.sendPasswordResetEmail(em()).then(() => document.getElementById("gerr").textContent = "Ti ho mandato un'email per cambiare la password.").catch(fail); };
