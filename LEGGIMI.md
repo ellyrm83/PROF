@@ -39,7 +39,7 @@ Poi **Authentication → Impostazioni → Domini autorizzati → Aggiungi domini
 4. Copia l'indirizzo del servizio (tipo `https://prof-ai.<tuo-nome>.workers.dev`) e mandalo a Claude: lo inserisce in `config.js`.
 
 ## 7. Primo accesso
-- Apri https://ellyrm83.github.io/prof/ e tocca **Crea l'account**: il primo account diventa quello di PROF, e **nessun altro** può entrare.
+- Apri https://ellyrm83.github.io/PROF/ e tocca **Crea l'account**: il primo account diventa quello di PROF, e **nessun altro** può entrare.
 - Sul tablet di Adriano apri lo stesso indirizzo ed entra con **la stessa email e password**. Così ritrova chat, schede, compiti e libri.
 - **Android (Chrome)**: menu ⋮ → **Aggiungi a schermata Home**. **iPad (Safari)**: Condividi → **Aggiungi alla schermata Home**.
 
