@@ -9,7 +9,7 @@
   // ---------- schermata di accesso ----------
   const css = `#gate{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 90% at 20% 0%,#2c3e4c,#22313d);color:#f3f5ef;display:grid;place-items:center;padding:20px;font:17px/1.5 "Atkinson Hyperlegible",system-ui,sans-serif}
 #gate .box{width:min(420px,100%)}#gate h1{font-family:Kalam,cursive;font-size:56px;margin:0 0 4px}#gate p{color:#cfd8d2;margin:4px 0 14px}
-#gate label{display:block;font-weight:700;margin:10px 0 4px}#gate input{width:100%;padding:12px;border-radius:10px;border:0;font-size:16px}
+#gate label{display:block;font-weight:700;margin:10px 0 4px}#gate input{width:100%;padding:12px;border-radius:10px;border:2px solid #ffd53d;font-size:17px;background:#fff;color:#18202a;-webkit-text-fill-color:#18202a;caret-color:#1b3fae}#gate input::placeholder{color:#7a8590;-webkit-text-fill-color:#7a8590}
 #gate button{min-height:48px;padding:8px 18px;border-radius:12px;border:2px solid #ffd53d;font-weight:700;font-size:16px;margin:12px 8px 0 0;cursor:pointer}
 #gate .a{background:#ffd53d;color:#1c242c}#gate .b{background:transparent;color:#ffd53d}#gate .err{color:#ffb4a8;min-height:1.5em}#gate .s{font-size:14px;color:#9fb0ba}`;
   const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
