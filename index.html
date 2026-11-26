@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PROF</title>
-<meta name="theme-color" content="#22313d">
+<meta name="theme-color" content="#1b0838">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,10 +12,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="config.js?v=4"></script>
-<script src="adapter.js?v=4"></script>
+<script src="config.js?v=5"></script>
+<script src="adapter.js?v=5"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Kalam:wght@400;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* VOICE: un insegnante caldo ma esigente; passi brevi, una cosa per volta
    IDEA: la lavagna d'aula sopra il quaderno a quadretti
@@ -147,6 +147,60 @@ details li{margin:3px 0}
 .cmp.done .tx{opacity:.5;text-decoration:line-through}
 .toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--board);color:var(--chalk);padding:10px 16px;border-radius:12px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:30;max-width:90vw;text-align:center}
 .toast.on{opacity:1}
+</style>
+<style id="vice">
+/* Stile "Vice City al tramonto": viola notte, rosa neon, arancio tramonto, turchese oceano */
+:root,:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark;
+--bg:#140a26;--grid:#21133a;--ink:#f7f0ff;--mute:#bba9d6;--card:#1e1238;--line:#3b2a60;
+--pen:#ff4fa3;--hi:#ffb347;--red:#ff6b6b;--ok:#3ee6c4;--me:#2c1850;--board:#2a0f4f;--board2:#c2185b;--chalk:#fff7ee}
+body{background-color:var(--bg);background-image:linear-gradient(rgba(255,79,163,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(62,230,196,.05) 1px,transparent 1px);background-size:26px 26px}
+h1,h2,h3{font-family:Anton,Impact,"Arial Narrow",sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase}
+h3{color:var(--pen);font-size:22px}
+.board{background:linear-gradient(165deg,#1b0838 0%,#4a1170 35%,#c2185b 72%,#ff7a3d 100%);border-bottom:4px solid var(--ok);box-shadow:none;position:relative;overflow:hidden}
+.board::after{content:"";position:absolute;left:0;right:0;bottom:0;height:38%;background:repeating-linear-gradient(0deg,rgba(20,10,38,.0) 0 7px,rgba(20,10,38,.28) 7px 10px);pointer-events:none}
+.board .in{position:relative;z-index:1}
+.board h1{font-size:clamp(40px,9vw,64px);line-height:.95;background:linear-gradient(90deg,#ffe08a,#ffb347 40%,#ff4fa3 80%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 rgba(20,10,38,.55))}
+.board p{color:#ffe9f4}
+.path{font-family:"Atkinson Hyperlegible",system-ui,sans-serif;font-weight:700}
+.path span{border-color:rgba(255,255,255,.35);color:#ffe9f4;background:rgba(20,10,38,.25)}
+.path span.ok{border-color:var(--ok);color:var(--ok)}
+.path span.now{background:linear-gradient(90deg,#ffb347,#ff4fa3);color:#1b0838;border-color:transparent}
+.path i{color:#ffd1e6}
+.focus b{color:#ffe08a;font-family:Anton,Impact,sans-serif;font-weight:400}
+.focus .bar{background:rgba(20,10,38,.4)}.focus .bar i{background:linear-gradient(90deg,#3ee6c4,#ffb347)}
+.bbtn{border-color:#ffe08a;color:#ffe08a;background:rgba(20,10,38,.3)}
+.card{background:var(--card);border-color:var(--line);box-shadow:0 0 0 1px rgba(255,79,163,.08),0 10px 30px rgba(10,4,24,.35)}
+.btn{border-color:var(--pen);color:var(--pen)}
+.btn.full{background:var(--pen);color:#1b0838;border-color:var(--pen)}
+.btn.hi{background:linear-gradient(90deg,#ffb347,#ff4fa3);border:0;color:#1b0838}
+.btn.red{border-color:var(--red);color:var(--red)}
+.chip{background:var(--card);border-color:var(--line);color:var(--ink)}
+.chip[aria-pressed=true]{background:linear-gradient(90deg,#ffb347,#ff4fa3);border-color:transparent;color:#1b0838}
+.mats .chip[aria-selected=true]{background:var(--ok);border-color:var(--ok);color:#1b0838}
+input[type=text],select,textarea,input[type=date]{background:#241544!important;color:var(--ink)!important;border-color:var(--line)!important}
+input::placeholder,textarea::placeholder{color:#9a86bb}
+:focus-visible{outline-color:var(--ok)}
+.msg.prof{background:#221443;border-color:#4a2f78}
+.msg.me{background:var(--me);border:1px solid rgba(255,79,163,.45)}
+.msg b{background:none;color:#ffe08a}
+.who{color:var(--ok);font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.6px;text-transform:uppercase;font-size:15px}
+.icon{background:var(--card);border-color:var(--pen);color:var(--pen)}
+.icon.send{background:linear-gradient(135deg,#ffb347,#ff4fa3);border:0;color:#1b0838}
+.composer{background:linear-gradient(transparent,var(--bg) 25%)}
+nav.tabs{background:#120822;border-top:2px solid #4a1170}
+nav.tabs a{color:#9a86bb}nav.tabs a.on{color:var(--pen)}
+.tip{border-left-color:var(--hi);background:rgba(255,179,71,.12)}.tip.err{border-left-color:var(--red);background:rgba(255,107,107,.12)}
+.six span{border-color:var(--line);color:var(--mute)}.six span.on{border-color:var(--ok);color:var(--ok);background:rgba(62,230,196,.1)}
+.clock{color:var(--hi);font-family:Anton,Impact,sans-serif;font-weight:400}
+.due{background:#2c1850;color:var(--mute)}.due.today{background:var(--red);color:#1b0838}.due.soon{background:var(--hi);color:#1b0838}
+.note{border-left-color:var(--pen);background:rgba(255,79,163,.1)}
+details{background:var(--card);border-color:var(--line)}summary::after{color:var(--pen)}
+summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;text-transform:uppercase}
+.meter{background:var(--line)}.meter i{background:linear-gradient(90deg,#3ee6c4,#ff4fa3)}
+.steps button{background:var(--card);border-color:var(--line);color:var(--ink)}.steps button.done{border-color:var(--ok);color:var(--ok)}.steps button.cur{background:var(--pen);border-color:var(--pen);color:#1b0838}
+.lv button{background:var(--card);border-color:var(--line)}.lv button .d{border-color:var(--pen);color:var(--pen)}.lv button.done .d{background:var(--pen);color:#1b0838}
+.toast{background:linear-gradient(90deg,#4a1170,#c2185b);color:#fff}
+.item{background:var(--card);border-color:var(--line)}
 </style>
 </head>
 <body>

@@ -7,11 +7,11 @@
   window.claude = { use: n => whenReady.then(() => impl[n] || null) };
 
   // ---------- schermata di accesso ----------
-  const css = `#gate{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 90% at 20% 0%,#2c3e4c,#22313d);color:#f3f5ef;display:grid;place-items:center;padding:20px;font:17px/1.5 "Atkinson Hyperlegible",system-ui,sans-serif}
-#gate .box{width:min(420px,100%)}#gate h1{font-family:Kalam,cursive;font-size:56px;margin:0 0 4px}#gate p{color:#cfd8d2;margin:4px 0 14px}
-#gate label{display:block;font-weight:700;margin:10px 0 4px}#gate input{width:100%;padding:12px;border-radius:10px;border:2px solid #ffd53d;font-size:17px;background:#fff;color:#18202a;-webkit-text-fill-color:#18202a;caret-color:#1b3fae}#gate input::placeholder{color:#7a8590;-webkit-text-fill-color:#7a8590}
+  const css = `#gate{position:fixed;inset:0;z-index:50;background:linear-gradient(165deg,#1b0838 0%,#4a1170 40%,#c2185b 78%,#ff7a3d 100%);color:#fff7ee;display:grid;place-items:center;padding:20px;font:17px/1.5 "Atkinson Hyperlegible",system-ui,sans-serif}
+#gate .box{width:min(420px,100%);background:rgba(20,10,38,.55);padding:22px;border-radius:18px;border:1px solid rgba(255,255,255,.15)}#gate h1{font-family:Anton,Impact,sans-serif;font-weight:400;font-size:64px;line-height:1;margin:0 0 6px;background:linear-gradient(90deg,#ffe08a,#ffb347 40%,#ff4fa3 85%);-webkit-background-clip:text;background-clip:text;color:transparent}#gate p{color:#ffe9f4;margin:4px 0 14px}
+#gate label{display:block;font-weight:700;margin:10px 0 4px}#gate input{width:100%;padding:12px;border-radius:10px;border:2px solid #ff4fa3;font-size:17px;background:#fff;color:#18202a;-webkit-text-fill-color:#18202a;caret-color:#1b3fae}#gate input::placeholder{color:#7a8590;-webkit-text-fill-color:#7a8590}
 #gate button{min-height:48px;padding:8px 18px;border-radius:12px;border:2px solid #ffd53d;font-weight:700;font-size:16px;margin:12px 8px 0 0;cursor:pointer}
-#gate .a{background:#ffd53d;color:#1c242c}#gate .b{background:transparent;color:#ffd53d}#gate .err{color:#ffb4a8;min-height:1.5em}#gate .s{font-size:14px;color:#9fb0ba}`;
+#gate .a{background:linear-gradient(90deg,#ffb347,#ff4fa3);border-color:transparent;color:#1b0838}#gate .b{background:transparent;color:#ffe08a;border-color:#ffe08a}#gate .err{color:#ffb4a8;min-height:1.5em}#gate .s{font-size:14px;color:#9fb0ba}`;
   const st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
   const whenDom = f => document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", f) : f();
   function gate(html) { whenDom(() => { let g = document.getElementById("gate"); if (!g) { g = document.createElement("div"); g.id = "gate"; document.body.appendChild(g); } g.innerHTML = '<div class="box">' + html + "</div>"; }); }
