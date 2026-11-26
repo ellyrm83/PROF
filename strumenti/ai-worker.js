@@ -40,7 +40,7 @@ export default {
     const cors = { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Headers": "Content-Type, Authorization", "Access-Control-Allow-Methods": "POST, OPTIONS" };
     if (req.method === "OPTIONS") return new Response(null, { headers: cors });
     if (req.method !== "POST") {
-      return new Response("PROF AI: attivo · versione 4 · voce " + (env.OPENAI_API_KEY ? "naturale pronta" : "da collegare"), { headers: cors });
+      return new Response("PROF AI: attivo · versione 5 · voce " + (env.OPENAI_API_KEY ? "naturale pronta" : "da collegare"), { headers: cors });
     }
     const tok = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     let uid; try { uid = await verificaToken(tok, PID); } catch (e) { return new Response("accesso negato", { status: 401, headers: cors }); }
@@ -74,7 +74,7 @@ export default {
       const voice = VOCI.includes(b.voice) ? b.voice : "cedar";
       const instructions = en
         ? "You are a warm, friendly English teacher talking one-to-one with a 14-year-old Italian student. Speak naturally and conversationally, like a real person, with a clear British accent, relaxed pace, natural pauses and gentle enthusiasm. Never sound like you are reading."
-        : "Sei un professore italiano simpatico e caloroso che parla a tu per tu con un ragazzo di 14 anni. Parla in italiano con accento italiano naturale e neutro, come una persona vera in una conversazione: ritmo rilassato, pause naturali, intonazione viva e variata, un sorriso nella voce. Non sembrare mai uno che legge.";
+        : "Voce: italiano madrelingua, nato e cresciuto in Italia. Pronuncia italiana perfetta e naturale, ZERO accento straniero (niente accento americano o inglese): vocali italiane pure, R italiana, doppie ben marcate, accenti delle parole corretti, intonazione italiana. Tono: un professore simpatico e caloroso che parla a tu per tu con un ragazzo di 14 anni, come in una conversazione vera, ritmo rilassato, pause naturali, un sorriso nella voce; mai come uno che legge. IMPORTANTE: le parole e le frasi in inglese dentro il discorso (per esempio esempi di grammatica come I went, past simple, football) pronunciale con pronuncia inglese corretta, poi torna subito alla pronuncia italiana.";
       let r;
       try { r = await fetch("https://api.openai.com/v1/audio/speech", { method: "POST", headers: { "content-type": "application/json", Authorization: "Bearer " + env.OPENAI_API_KEY }, body: JSON.stringify({ model: "gpt-4o-mini-tts", voice, input: text, instructions, response_format: "mp3" }) }); }
       catch (e) { return new Response("OpenAI non raggiungibile", { status: 502, headers: cors }); }
