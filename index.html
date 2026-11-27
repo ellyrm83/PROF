@@ -599,7 +599,8 @@ const METODO=`IL METODO DI STUDIO DI ADRIANO (dal suo manuale):
 7 Sei mosse orali: Presenta, Definisci, Descrivi, Spiega, Fai un esempio, Concludi. La parola chiave diventa frase, la frase diventa spiegazione.
 8 Livelli: 1 una frase completa; 2 tre frasi; 3 un minuto senza leggere; 4 due minuti con solo lo schema; 5 interrogazione con domande non preparate. Se si blocca: guarda una parola chiave e riparti.
 9 Pronto se: spiega senza leggere, frasi complete, definizioni, passaggi principali, esempi e collegamenti, linguaggio specifico, risponde alle domande.`;
-const STILE=`COME LAVORA MEGLIO ADRIANO: si concentra meglio con blocchi brevi e obiettivi piccoli e chiari. Quindi: una sola consegna per volta; frasi brevi; quando spieghi, al massimo 3 punti; fai spesso domande che lo tengano attivo; dai un riscontro immediato; celebra i piccoli traguardi; se divaga o si distrae, riportalo al punto con gentilezza e senza rimproveri; dopo circa 15-20 minuti di lavoro, o se sembra stanco, proponi una pausa di 5 minuti; quando si passa al passo successivo dillo chiaramente ("Fatto! Ora passiamo a…").`;
+const STILE=`PAUSE: quando proponi una pausa scrivi esattamente "pausa di N minuti" (di solito 5): l'app fa partire il timer e suona quando la pausa è finita; al ritorno riprendi da dove eravate.
+COME LAVORA MEGLIO ADRIANO: si concentra meglio con blocchi brevi e obiettivi piccoli e chiari. Quindi: una sola consegna per volta; frasi brevi; quando spieghi, al massimo 3 punti; fai spesso domande che lo tengano attivo; dai un riscontro immediato; celebra i piccoli traguardi; se divaga o si distrae, riportalo al punto con gentilezza e senza rimproveri; dopo circa 15-20 minuti di lavoro, o se sembra stanco, proponi una pausa di 5 minuti; quando si passa al passo successivo dillo chiaramente ("Fatto! Ora passiamo a…").`;
 const MODE_TXT={
  compiti:'MODALITÀ: Organizziamo i compiti. Usa l\'elenco COMPITI qui sotto. Proponi il piano di oggi in blocchi da 15 minuti con 5 minuti di pausa (massimo 5 blocchi), partendo da ciò che scade prima (verifiche e interrogazioni hanno la precedenza e vanno preparate con qualche giorno di anticipo), alternando materie pesanti e leggere. Presenta il piano come elenco breve, poi chiedi da quale blocco parte. Per ogni compito digli cosa tenere pronto (libro e pagine, quaderno) e di fotografare le pagine o l\'esercizio con la graffetta; poi guidalo con il metodo. Quando finisce un compito, ricordagli di spuntarlo nella sezione Compiti.',
  lezione:'MODALITÀ: Lezione. Sei in classe e tieni una vera lezione sull\'argomento (quello della scheda o quello che ti chiede; se non è chiaro, chiediglielo). Spiega come un bravo professore dal vivo: parti da qualcosa che conosce o da una domanda curiosa, poi vai avanti in blocchi da 100-150 parole (in questa modalità puoi superare le 90 parole), ognuno con un solo concetto, esempi concreti e collegamenti con quello che ha già studiato. Usa come base, se ci sono, il testo del libro, le pagine allegate e le spiegazioni registrate in classe. Alla fine di ogni blocco fermati e chiedi: "Fin qui ci sei? Domande?", oppure fai una domandina veloce di controllo. Se alza la mano e fa una domanda, rispondi come in classe, anche se è fuori tema rispetto al blocco, poi riprendi il filo ("Torniamo a noi…"). Se dice "vai avanti", passa al blocco successivo. Alla fine fai un riepilogo di 3 punti e proponi di passare a Esponi per ripetere la lezione con parole sue.',
@@ -1031,7 +1032,7 @@ async function talk(){if(!sample||busy)return;busy=true;$('#send').disabled=true
  if(msgs[msgs.length-1].role!=='user')msgs.push({role:'user',content:'(continua)'});
  ctrl=new AbortController();
  const ti=await talkImages(),c0=C(k);const web=!bp?.txt&&mat!=='organizzazione';c0.sentPg=c0.sentPg||'';const pgKey=(get(pId)?.bookId||'')+'|'+(get(pId)?.pagine||'');const pimgs=bp?.imgs?.length&&c0.sentPg!==pgKey?bp.imgs:[];
- try{const r=await ai(msgs,{images:[...pimgs,...ti.out].slice(0,8),web,complex:(C(k).qual==='alta')||(ti.out.length+pimgs.length>0&&C(k).qual!=='eco-only'),signal:ctrl.signal,onText:({text})=>{if(k===mat)drawChat(text)}});const t=r.text.trim();c0.sent=[...new Set([...(c0.sent||[]),...ti.ids])].slice(-200);if(pimgs.length)c0.sentPg=pgKey;target.push({role:'assistant',content:t,t:Date.now()});saveChat(k);if(k===mat&&$('#voiceOn').checked)speakOut(t);updMemory(k)}
+ try{const r=await ai(msgs,{images:[...pimgs,...ti.out].slice(0,8),web,complex:(C(k).qual==='alta')||(ti.out.length+pimgs.length>0&&C(k).qual!=='eco-only'),signal:ctrl.signal,onText:({text})=>{if(k===mat)drawChat(text)}});const t=r.text.trim();c0.sent=[...new Set([...(c0.sent||[]),...ti.ids])].slice(-200);if(pimgs.length)c0.sentPg=pgKey;target.push({role:'assistant',content:t,t:Date.now()});saveChat(k);if(k===mat&&$('#voiceOn').checked)speakOut(t);if(k===mat)pauseFromProf(t);updMemory(k)}
  catch(e){if(e?.name!=='AbortError'&&e?.code!=='aborted')target.push({role:'assistant',content:aiErr(e),t:Date.now(),err:1})}
  busy=false;$('#send').disabled=false;if(k===mat){drawChat();scrollEnd()}}
 async function updMemory(k){const c=C(k);const n=c.messages.length;if(!sample||n-c.memAt<8)return;c.memAt=n;
@@ -1316,13 +1317,27 @@ function micToggle(){if(!dict)return;if(dict.active()){dict.stop().catch(()=>{})
 $('#mic').addEventListener('click',micToggle);$('#talk').addEventListener('click',micToggle);
 
 /* ---------- concentrazione ---------- */
-let fz=ls.get('prof-focus',null),fzT=null;
+let fz=ls.get('prof-focus',null),fzT=null,actx=null;
+// suoni: un piccolo gong generato dal tablet (niente file da scaricare)
+function audioCtx(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx}catch(e){return null}}
+addEventListener('pointerdown',()=>audioCtx(),{capture:true,once:true});
+function chime(kind){const a=audioCtx();if(!a)return;const notes=kind==='fine-pausa'?[523.25,659.25,783.99,1046.5]:[783.99,659.25,523.25];const t0=a.currentTime+.05;
+ const rep=kind==='fine-pausa'?2:1;for(let r=0;r<rep;r++)notes.forEach((f,i)=>{const t=t0+r*1.4+i*.22,o=a.createOscillator(),g=a.createGain(),o2=a.createOscillator(),g2=a.createGain();
+  o.type='sine';o.frequency.value=f;o2.type='sine';o2.frequency.value=f*2;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.35,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+1.2);g2.gain.setValueAtTime(0,t);g2.gain.linearRampToValueAtTime(.08,t+.02);g2.gain.exponentialRampToValueAtTime(.001,t+.6);
+  o.connect(g).connect(a.destination);o2.connect(g2).connect(a.destination);o.start(t);o2.start(t);o.stop(t+1.3);o2.stop(t+.7)});
+ try{navigator.vibrate&&navigator.vibrate(kind==='fine-pausa'?[300,150,300,150,500]:[250])}catch(e){}}
+async function notify(title,body){try{if(!('Notification' in window)||Notification.permission!=='granted'||document.visibilityState==='visible')return;const r=await navigator.serviceWorker?.getRegistration();if(r)r.showNotification(title,{body,icon:'icon-192.png',tag:'prof-timer',renotify:true,vibrate:[300,150,300]});else new Notification(title,{body})}catch(e){}}
+function askNotify(){try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(e){}}
+function startPause(min,why){min=Math.max(1,Math.min(30,Math.round(min)||5));fz={phase:'pausa',end:Date.now()+min*60000,tot:min*60};ls.set('prof-focus',fz);askNotify();drawFocus();toast(why||`Pausa di ${min} minuti: alzati e muoviti, ti avviso io quando è finita.`)}
+function pauseFromProf(t){const m=String(t).match(/pausa\s+di\s+(\d{1,2})\s*min|(\d{1,2})\s*minuti\s+di\s+pausa/i);if(!m||fz?.phase==='pausa')return;startPause(+(m[1]||m[2]),`Il prof ti dà ${+(m[1]||m[2])} minuti di pausa: ti avviso io con un suono quando è finita.`)}
 function drawFocus(){const el=$('#focus');if(!fz){el.innerHTML='<button class="bbtn" id="fzGo">Inizia 15 minuti di studio</button>';return}
- const left=Math.max(0,(fz.end-Date.now())/1000),tot=fz.phase==='studio'?900:300;
+ const left=Math.max(0,(fz.end-Date.now())/1000),tot=fz.tot||(fz.phase==='studio'?900:300);
  el.innerHTML=`<span>${fz.phase==='studio'?'Concentrazione':'Pausa'}</span><b>${fmtT(left)}</b><span class="bar"><i style="width:${(1-left/tot)*100}%"></i></span><button class="bbtn" id="fzStop">Stop</button>`}
-function tick(){if(!fz)return;if(Date.now()>=fz.end){if(fz.phase==='studio'){fz={phase:'pausa',end:Date.now()+300000};toast('Bravo! 15 minuti fatti. Ora 5 minuti di pausa: alzati e muoviti.')}else{fz=null;toast('Pausa finita: si riparte!')}ls.set('prof-focus',fz)}drawFocus()}
-$('#focus').addEventListener('click',e=>{if(e.target.id==='fzGo'){fz={phase:'studio',end:Date.now()+900000}}else if(e.target.id==='fzStop')fz=null;else return;ls.set('prof-focus',fz);drawFocus()});
+function tick(){if(!fz)return;if(Date.now()>=fz.end){if(fz.phase==='studio'){fz={phase:'pausa',end:Date.now()+300000,tot:300};chime('fine-studio');notify('Bravo, 15 minuti fatti!','Ora 5 minuti di pausa: alzati e muoviti.');toast('Bravo! 15 minuti fatti. Ora 5 minuti di pausa: alzati e muoviti.')}
+ else{fz=null;chime('fine-pausa');notify('Pausa finita!','Torna dal prof: si riparte.');toast('Pausa finita: si riparte!');setTimeout(()=>{try{speakOut('La pausa è finita! Dai, si riparte.','it')}catch(e){}},2600)}ls.set('prof-focus',fz)}drawFocus()}
+$('#focus').addEventListener('click',e=>{if(e.target.id==='fzGo'){fz={phase:'studio',end:Date.now()+900000,tot:900};audioCtx();askNotify()}else if(e.target.id==='fzStop')fz=null;else return;ls.set('prof-focus',fz);drawFocus()});
 fzT=setInterval(tick,1000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')tick()});
 
 /* ---------- esponi ---------- */
 let eId='',eOn=false,eStart=0,eSec=0,eClk=null,eLiveC=null,eLiveT=null,eLastWords=0,eMosse=[0,0,0,0,0,0],eFb='',eTr='';
