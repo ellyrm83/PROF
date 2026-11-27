@@ -290,7 +290,7 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
    <select id="profScheda"></select>
    <div class="row" style="margin-top:12px;justify-content:space-between">
     <label class="tog"><input type="checkbox" id="voiceOn">Parliamo a voce</label>
-    <div class="row"><button class="btn sm hi" id="dispBtn">Appunti da stampare</button><button class="btn sm" id="memBtn">Cosa ricorda il prof</button></div>
+    <div class="row"><button class="btn sm" id="dispBtn2">Rifai gli appunti di oggi</button><button class="btn sm" id="memBtn">Cosa ricorda il prof</button></div>
    </div>
    <div class="row" id="voiceSet" style="margin-top:8px" hidden><label class="hint" for="vVoice">Voce del prof</label><select id="vVoice" style="width:auto"><option value="rounded">Calda</option><option value="buttery">Morbida</option><option value="airy">Leggera</option><option value="glassy">Chiara</option></select><label class="hint" for="vRate">Velocità</label><select id="vRate" style="width:auto"><option value="0.9">Più lenta</option><option value="1">Normale</option><option value="1.1">Più veloce</option></select><button class="btn sm" id="vTry">Prova</button></div>
    <p class="hint" id="voiceHint" hidden></p>
@@ -299,6 +299,7 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
   <button class="btn sm" id="older" hidden style="margin-top:6px">Mostra i messaggi più vecchi</button>
   <div id="noAI" class="card note" hidden>Il prof non riesce a rispondere: controlla la connessione. Se il problema resta, il servizio del prof va configurato (LEGGIMI, passo 6).</div>
   <div class="chat" id="chat" aria-live="polite"></div>
+  <div class="row" style="justify-content:center;margin:6px 0 4px"><button class="btn hi" id="dispBtn" style="font-size:19px;padding:12px 26px">■ Fine sessione · appunti da stampare</button></div>
   <div class="row" id="quick"><button class="chip" data-q="Ok, vai avanti.">Vai avanti</button><button class="chip" data-q="(Alzo la mano) Prof, ho una domanda: ">Alzo la mano</button><button class="chip" data-q="Non ho capito, me lo rispieghi in modo più semplice?">Non ho capito</button><button class="chip" data-q="Mi fai un esempio concreto?">Un esempio</button><button class="chip" data-q="Dove trovo questo argomento nel mio libro?">Dov'è nel libro?</button></div>
   <div class="thumbs" id="pend"></div>
   <button class="btn hi big" id="talk" hidden style="margin-top:8px">Tocca e parla</button>
@@ -1339,11 +1340,11 @@ function cleanHTML(h){h=String(h).replace(/^```(?:html)?\s*/i,'').replace(/```\s
   for(const a of [...c.attributes]){if(a.name==='class'){const k=a.value.split(/\s+/).filter(x=>D_CLS.has(x)).join(' ');if(k)c.setAttribute('class',k);else c.removeAttribute('class')}else if(!(a.name==='colspan'||a.name==='rowspan'))c.removeAttribute(a.name)}walk(c)}})(doc.body.firstChild);
  return doc.body.firstChild.innerHTML}
 async function makeDisp(){if(!sample){$('#noAI').hidden=false;return}if(busy){toast('Un attimo: il prof sta finendo di rispondere');return}
- const now=Date.now(),msgs=chat.filter(m=>m.role!=='note');let i=msgs.length;while(i>0&&now-(msgs[i-1].t||now)<4*3600e3)i--;let L=msgs.slice(Math.max(0,Math.min(i,msgs.length-6))).slice(-60);
+ const now=Date.now(),msgs=chat.filter(m=>m.role!=='note'&&!m.err),mid=new Date();mid.setHours(0,0,0,0);let L=msgs.filter(m=>(m.t||0)>=mid.getTime()).slice(-80);if(L.filter(m=>m.role==='assistant').length<2){let i=msgs.length;while(i>0&&now-(msgs[i-1].t||now)<4*3600e3)i--;L=msgs.slice(Math.max(0,Math.min(i,msgs.length-6))).slice(-60)}
  if(L.filter(m=>m.role==='assistant').length<2){toast('Prima fai un po\' di lezione col prof: poi preparo gli appunti');return}
- const sc=get(pId),bp=await bookPages(sc).catch(()=>null),b=$('#dispBtn');b.disabled=true;b.textContent='Preparo gli appunti…';toast('Il prof sta scrivendo gli appunti: ci vuole circa un minuto');
+ const sc=get(pId),bp=await bookPages(sc).catch(()=>null),b=$('#dispBtn');b.disabled=true;b.textContent='Il prof sta scrivendo gli appunti…';shush();if(fz){fz=null;ls.set('prof-focus',fz);drawFocus();try{wake(false)}catch(x){}}toast('Il prof sta scrivendo gli appunti: ci vuole circa un minuto');
  const conv=L.map(m=>(m.role==='user'?'ADRIANO: ':'PROF: ')+m.content).join('\n\n').slice(-40000);
- const pr=`Sei il professore di Adriano (1ª liceo scientifico, ha l'ADHD: servono appunti chiari, ariosi, frasi brevi, niente muri di testo). Scrivi gli APPUNTI DA STAMPARE della lezione qui sotto di ${matName(mat)}: devono funzionare come un libro di testo integrato con le pagine del suo libro.
+ const pr=`Sei il professore di Adriano (1ª liceo scientifico, ha l'ADHD: servono appunti chiari, ariosi, frasi brevi, niente muri di testo). È la FINE DELLA SESSIONE di studio di oggi (${new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'})}). Scrivi gli APPUNTI DA STAMPARE di tutto quello che è stato studiato oggi in ${matName(mat)} (riassunto della lezione di oggi, completo e ordinato): devono funzionare come un libro di testo integrato con le pagine del suo libro.
 Contenuto: tutto quello che è stato spiegato nella lezione, ordinato e completo, corretto e integrato dove serve per capire (senza andare fuori argomento). Usa le parole semplici usate a lezione.
 FORMATO: rispondi SOLO con HTML, senza markdown e senza \`\`\`. Tag ammessi: h1,h2,h3,p,ul,ol,li,b,i,u,table,thead,tbody,tr,th,td,div,span,br,hr,sup,sub. Classi ammesse: box, def, es, key, schema, q, check, meta.
 STRUTTURA:
@@ -1364,11 +1365,11 @@ LEZIONE:
 ${conv}`;
  try{const r=await ai(pr,{complex:true});const html=cleanHTML(r.text);if(!html.trim())throw {message:'vuoto'};
   const t=(new DOMParser().parseFromString(html,'text/html').querySelector('h1')?.textContent||'Appunti di '+matName(mat)).trim();
-  const d={id:'d'+now.toString(36),mat,titolo:t.slice(0,120),html,date:now,schedaId:sc?.id||''};dispense.unshift(d);saveDisp(d);note('Appunti da stampare pronti: '+d.titolo);drawChat();openDisp(d.id)}
- catch(e){toast(aiErr(e))}finally{b.disabled=false;b.textContent='Appunti da stampare'}}
+  const d={id:'d'+now.toString(36),mat,titolo:t.slice(0,120),html,date:now,schedaId:sc?.id||''};dispense.unshift(d);saveDisp(d);note('Fine sessione: appunti da stampare pronti ('+d.titolo+'). Li trovi anche in Schede → Il mio quaderno.');drawChat();openDisp(d.id);setTimeout(()=>levelUp('SESSIONE COMPLETATA','BRAVO!',`Oggi hai studiato ${matName(mat)}: i tuoi appunti sono pronti da stampare.`,3),300)}
+ catch(e){toast(aiErr(e))}finally{b.disabled=false;b.textContent='■ Fine sessione · appunti da stampare'}}
 function openDisp(id){const d=dispense.find(x=>x.id===id);if(!d)return;dCur=d;$('#dPaper').innerHTML=d.html;$('#dispView').hidden=false;shush()}
 function printDisp(d){$('#printArea').innerHTML='<div class="paper">'+d.html+'</div>';setTimeout(()=>{try{window.print()}catch(e){toast('Stampa non disponibile qui')}},60)}
-$('#dispBtn').addEventListener('click',makeDisp);
+$('#dispBtn').addEventListener('click',makeDisp);$('#dispBtn2').addEventListener('click',makeDisp);
 $('#dClose').addEventListener('click',()=>{$('#dispView').hidden=true});
 $('#dPrint').addEventListener('click',()=>{if(dCur)printDisp(dCur)});
 function renderQuaderno(){const el=$('#qList');if(!dispense.length){el.innerHTML='<p class="mute">Ancora vuoto. Alla fine di una lezione col prof tocca "Appunti da stampare".</p>';return}
