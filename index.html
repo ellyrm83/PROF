@@ -1050,7 +1050,7 @@ ${altri.length?'Altri argomenti di questa materia già nelle sue schede: '+altri
 ${booksTxt(get(pId)||(mat!=='organizzazione'?{materia:matName(mat)}:null))}
 ${lezTxt()}
 ${compitiTxt()}
-${mat!=='organizzazione'?`LIVELLO DI PREPARAZIONE (gioco dell'app): ${L_(mat).lv==null?'non ancora misurato: appena possibile fai una piccola prova e dai il voto indicativo':'attuale '+fmtV(Math.floor(L_(mat).lv*2)/2)+', obiettivo '+goalOf(mat)}. Usa ogni tanto frasi da videogioco motivanti, tipo "ora sei a 4, arriviamo a 6!" o "sei a 6, adesso alziamo la media!". Ogni voto indicativo più alto è un livello in più.`:''}
+${mat!=='organizzazione'?`LIVELLO DI PREPARAZIONE (gioco dell'app): ${L_(mat).lv==null?'non ancora misurato: appena possibile fai una piccola prova e dai il voto indicativo':'attuale '+fmtV(Math.floor(L_(mat).lv*2)/2)+(L_(mat).src==='scuola'?' (preso dai voti veri di scuola: è il punto di partenza reale)':'')+', obiettivo '+goalOf(mat)}. Usa ogni tanto frasi da videogioco motivanti, tipo "ora sei a 4, arriviamo a 6!" o "sei a 6, adesso alziamo la media!". Ogni voto indicativo più alto è un livello in più.`:''}
 ${verificheTxt(mat)}
 ${votiTxt(mat)}
 ${programmaTxt(mat)}`}
@@ -1101,7 +1101,7 @@ let voti=ls.get('prof-voti-v1',[]),vcol=null,vPerMat=ls.get('prof-voti-mat',{}),
 const VOTI_L=['2','3','3½','4-','4','4+','4½','5-','5','5+','5½','6-','6','6+','6½','7-','7','7+','7½','8-','8','8+','8½','9-','9','9+','9½','10'];
 const vNum=l=>{l=String(l).replace(',','.').replace('½','.5').replace(/\s/g,'');const m=l.match(/^(\d+(?:\.\d+)?)([+-]?)$/);if(!m)return NaN;return +m[1]+(m[2]==='+'?.25:m[2]==='-'?-.25:0)};
 const vCls=(n,goal=6)=>n<6?'lo':n<Math.max(6.5,goal)?'mid':'hi';
-function saveVoti(){ls.set('prof-voti-v1',voti);ls.set('prof-voti-mat',vPerMat);if(vcol){const body={kind:'voti',items:JSON.parse(JSON.stringify(voti.slice(-300))),perMat:JSON.parse(JSON.stringify(vPerMat))};vChain=vChain.then(()=>vcol.set(body)).catch(()=>{})}}
+function saveVoti(){setTimeout(()=>{try{saveLiv();drawHud()}catch(e){}},0);ls.set('prof-voti-v1',voti);ls.set('prof-voti-mat',vPerMat);if(vcol){const body={kind:'voti',items:JSON.parse(JSON.stringify(voti.slice(-300))),perMat:JSON.parse(JSON.stringify(vPerMat))};vChain=vChain.then(()=>vcol.set(body)).catch(()=>{})}}
 function vAll(k){return voti.filter(v=>matKey(v.materia)===k).sort((a,b)=>(a.data||'').localeCompare(b.data||''))}
 function vSet(k){return vPerMat[k]=vPerMat[k]||{obiettivo:7,priorita:'normale',nota:''}}
 function vStats(k){const L=voti.filter(v=>matKey(v.materia)===k&&!isNaN(v.n)).sort((a,b)=>(a.data||'').localeCompare(b.data||''));
@@ -1247,11 +1247,17 @@ function recupero(k){openProf(null,'recupero',recuperoMsg(k),null,k)}
 /* ---------- gioco: livelli di preparazione ---------- */
 let livelli=ls.get('prof-livelli-v1',{}),lcol=null;
 function saveLiv(){ls.set('prof-livelli-v1',livelli);if(lcol)lcol.set({kind:'livelli',data:JSON.parse(JSON.stringify(livelli))}).catch(()=>{})}
-const L_=k=>livelli[k]=livelli[k]||{lv:null,best:null,hist:[]};
+const L_=k=>{const G=livelli[k]=livelli[k]||{lv:null,best:null,hist:[]};
+ // livello = media dei voti veri della scuola, finché il prof non misura un livello nuovo con una prova;
+ // se poi arriva un voto vero più recente della prova del prof, conta di nuovo la scuola
+ const st=typeof vStats==='function'?vStats(k):{L:[]};if(st.L.length){const school=Math.floor(st.m*2)/2,lastD=new Date((st.L[st.L.length-1].data||'1970-01-01')+'T20:00').getTime();
+  if(G.src!=='prof'||lastD>(G.pt||0)){G.lv=school;G.src='scuola';G.best=Math.max(G.best||0,school)}}
+ return G};
 function goalOf(k){const g=vSet(k).obiettivo||7;const cur=L_(k).lv;if(cur==null)return 6;return cur<6?6:Math.min(10,Math.max(g,Math.floor(cur)+1))}
 function hudMsg(k){const G=L_(k),cur=G.lv,goal=goalOf(k),m=vStats(k).m;
  if(cur==null)return 'Fai una prova col prof (Interrogami, esercizi o una simulazione): scopriamo il tuo livello di partenza!';
- const c=Math.floor(cur*2)/2;if(c<6)return `Ora la tua preparazione è da ${fmtV(c)}… cerchiamo di arrivare a 6! Mancano ${fmtV(6-c)} punti.`;
+ const from=G.src==='scuola'?' (dai voti di scuola)':'';
+ const c=Math.floor(cur*2)/2;if(c<6)return `Ora la tua preparazione è da ${fmtV(c)}${from}: non è ancora sufficiente… cerchiamo di arrivare a 6! Mancano ${fmtV(6-c)} punti.`;
  if(!isNaN(m)&&m<c)return `Bravo, sei a ${fmtV(c)}! Ora porta questo livello in classe e aumentiamo la tua media (adesso ${m.toFixed(1)}).`;
  return `Grande, sei a ${fmtV(c)}! Prossima missione: livello ${goal}.`}
 const fmtV=n=>String(n).replace('.5','½').replace('.',',');
@@ -1284,7 +1290,7 @@ function levelUp(small,big,sub,stars){$('#lvSmall').textContent=small;$('#lvBig'
 $('#lvOk').addEventListener('click',()=>{$('#lvUp').hidden=true});
 function levelDown(sub){$('#lvSmall').textContent='LIVELLO GIÙ';$('#lvBig').textContent='OPS!';$('#lvSub').textContent=sub;$('#lvStars').textContent='';$('#confetti').innerHTML='';$('#lvUp').hidden=false;playSfx('down');try{navigator.vibrate&&navigator.vibrate([200,100,400])}catch(e){}clearTimeout(levelUp.t);levelUp.t=setTimeout(()=>{$('#lvUp').hidden=true},5000)}
 function gameFromProf(t,k){if(k==='organizzazione')return;const m=String(t).match(/voto\s+indicativo\s*:?\s*\**\s*(\d{1,2}\s*½|\d{1,2}(?:[.,]\d+)?)\s*([+-])?\s*(?:\/\s*10)?/i);if(!m)return;
- let n=vNum(m[1].replace(/\s/g,'')+(m[2]||''));if(isNaN(n)||n<1||n>10)return;const G=L_(k),prev=G.lv;G.lv=n;G.best=Math.max(G.best||0,n);G.hist=[...(G.hist||[]),{n,t:Date.now()}].slice(-40);saveLiv();
+ let n=vNum(m[1].replace(/\s/g,'')+(m[2]||''));if(isNaN(n)||n<1||n>10)return;const G=L_(k),prev=G.lv;G.lv=n;G.src='prof';G.pt=Date.now();G.best=Math.max(G.best||0,n);G.hist=[...(G.hist||[]),{n,t:Date.now()}].slice(-40);saveLiv();
  if(prev==null){drawHud();toast(`Livello di partenza in ${matName(k)}: ${fmtV(Math.floor(n*2)/2)}. Ora si sale!`);return}
  if(Math.floor(n)>Math.floor(prev)){const lv=Math.floor(n);levelUp(lv>=6&&Math.floor(prev)<6?'SUFFICIENZA RAGGIUNTA':'LEVEL UP',`LIVELLO ${lv}`,lv>=6&&Math.floor(prev)<6?`Bravo! Sei a ${lv} in ${matName(k)}: ora aumentiamo la tua media!`:lv<6?`Da ${Math.floor(prev)} a ${lv} in ${matName(k)}! Ancora ${6-lv} e arrivi al 6!`:`Da ${Math.floor(prev)} a ${lv} in ${matName(k)}! Prossima missione: ${Math.min(10,lv+1)}.`,Math.min(5,Math.max(1,lv-3)))}
  else if(Math.floor(n)<Math.floor(prev))levelDown(`Sei sceso a ${fmtV(Math.floor(n*2)/2)} in ${matName(k)}. Succede anche ai campioni: un altro tentativo e risali!`);else if(n<prev)toast('Questa volta un po\' peggio: niente panico, recuperiamo insieme.');drawHud()}
