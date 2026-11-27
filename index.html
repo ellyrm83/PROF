@@ -192,6 +192,13 @@ details li{margin:3px 0}
 @keyframes cf{to{transform:translateY(110vh) rotate(720deg)}}
 @keyframes lvpop{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
 @keyframes lvbg{0%{opacity:0}100%{opacity:1}}
+
+#alarm{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(62,230,196,.5),rgba(20,10,38,.97) 70%);animation:alp 1s ease-in-out infinite alternate}
+#alarm[hidden]{display:none}#alarm .albox{text-align:center;padding:20px}
+#alarm .lvsmall{font:400 28px/1 Anton,Impact,sans-serif;color:#3ee6c4;letter-spacing:6px}
+#alarm .lvbig{font:400 100px/1 Anton,Impact,sans-serif;color:#ffd36b;-webkit-text-stroke:3px #7a1a4f;text-shadow:0 6px 0 #7a1a4f;margin:10px 0;transform:skew(-6deg)}
+#alarm .lvsub{color:#fff;font-weight:700;font-size:22px}
+@keyframes alp{from{background-color:rgba(0,0,0,0)}to{background-color:rgba(255,79,163,.25)}}
 #printArea{display:none}
 .vmat{border-left:6px solid var(--line)}.vmat.lo{border-left-color:#ff5d6c}.vmat.mid{border-left-color:#ffb347}.vmat.hi{border-left-color:var(--ok)}
 .vchip{display:inline-flex;align-items:center;justify-content:center;min-width:44px;padding:3px 8px;border-radius:10px;font-weight:800;font-size:17px;border:2px solid currentColor}
@@ -260,6 +267,7 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
 <button class="btn red" id="stopVoice" hidden aria-label="Ferma la voce del prof">■ Ferma la voce</button>
 <div id="dispView" hidden><div class="dbar"><button class="btn hi sm" id="dPrint">Stampa</button><button class="btn sm" id="dClose">Chiudi</button></div><div class="paper" id="dPaper"></div></div>
 <div id="printArea"></div>
+<div id="alarm" hidden><div class="albox"><div class="lvsmall">PAUSA FINITA</div><div class="lvbig" style="font-size:clamp(54px,13vw,120px)">SI RIPARTE!</div><p class="lvsub">Torna al tavolo: il prof ti aspetta.</p><button class="btn hi" id="alOk" style="font-size:24px;padding:14px 34px">Ci sono!</button></div></div>
 <div id="lvUp" hidden><div class="lvbg"></div><div class="lvbox"><div class="lvsmall" id="lvSmall">LEVEL UP</div><div class="lvbig" id="lvBig">LIVELLO 6</div><div class="lvsub" id="lvSub"></div><div class="lvstars" id="lvStars"></div><button class="btn hi" id="lvOk">Avanti!</button></div><div id="confetti"></div></div>
 
 <section class="view" id="v-prof">
@@ -539,7 +547,7 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
    <div class="card"><h3>Voce naturale</h3><p class="hint">Voce realistica di OpenAI, come una persona vera (circa 1,5 centesimi al minuto di parlato). Se non è collegata o il credito finisce, il prof usa la voce del dispositivo qui sotto.</p>
     <label class="tog"><input type="checkbox" id="nvOn">Usa la voce naturale</label>
     <label class="f" for="nvVoice">Voce</label><select id="nvVoice"><option value="cedar">Cedar · maschile, calda</option><option value="ash">Ash · maschile, chiara</option><option value="verse">Verse · maschile, espressiva</option><option value="echo">Echo · maschile, tranquilla</option><option value="marin">Marin · femminile, naturale</option><option value="coral">Coral · femminile, allegra</option><option value="sage">Sage · femminile, calma</option><option value="ballad">Ballad · morbida</option></select>
-    <div class="row" style="margin-top:10px"><button class="btn sm" id="nvTry">Prova la voce naturale</button></div><p class="hint" id="nvNote"></p></div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" id="nvTry">Prova la voce naturale</button><button class="btn sm" id="bellTry">Prova la campanella della pausa</button></div><p class="hint" id="nvNote"></p></div>
    <div class="card"><h3>Voce del prof</h3><p class="hint">Sono le voci installate su questo dispositivo: prova e scegli la più naturale. La scelta vale per questo dispositivo.</p>
     <label class="f" for="vzIt">Voce italiana</label><select id="vzIt"></select>
     <label class="f" for="vzEn">Voce inglese (English speaking)</label><select id="vzEn"></select>
@@ -1382,7 +1390,22 @@ $('#mic').addEventListener('click',micToggle);$('#talk').addEventListener('click
 let fz=ls.get('prof-focus',null),fzT=null,actx=null;
 // suoni: un piccolo gong generato dal tablet (niente file da scaricare)
 function audioCtx(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();return actx}catch(e){return null}}
-addEventListener('pointerdown',()=>audioCtx(),{capture:true,once:true});
+// campanella vera (file audio generato al volo): suona anche dove il gong sintetico resta muto
+function bellWav(){const sr=22050,dur=2.6,n=Math.floor(sr*dur),b=new ArrayBuffer(44+n*2),v=new DataView(b);const W=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+ W(0,'RIFF');v.setUint32(4,36+n*2,true);W(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);W(36,'data');v.setUint32(40,n*2,true);
+ const H=[[880,1,.9],[1760,.5,1.6],[2640,.25,2.4],[1318.5,.6,1.1]],starts=[0,.45,.9];
+ for(let i=0;i<n;i++){const t=i/sr;let x=0;for(const st of starts){const u=t-st;if(u<0)continue;const f0=st===starts[1]?1.1225:st===starts[2]?1.335:1;for(const [f,a,d] of H)x+=a*Math.exp(-u*d*2.2)*Math.sin(2*Math.PI*f*f0*u)}
+  v.setInt16(44+i*2,Math.max(-1,Math.min(1,x*.33))*32767,true)}return URL.createObjectURL(new Blob([b],{type:'audio/wav'}))}
+const bellAud=new Audio();bellAud.preload='auto';try{bellAud.src=bellWav()}catch(e){}
+let bellUnlocked=false;addEventListener('pointerdown',()=>{audioCtx();if(!bellUnlocked){bellUnlocked=true;try{bellAud.volume=0;bellAud.play().then(()=>{bellAud.pause();bellAud.currentTime=0;bellAud.volume=1}).catch(()=>{bellAud.volume=1})}catch(e){}}},{capture:true});
+let alT=null,alN=0;
+function ring(){try{bellAud.currentTime=0;bellAud.volume=1;bellAud.play().catch(()=>chime('fine-pausa'))}catch(e){chime('fine-pausa')}}
+function alarmStart(){$('#alarm').hidden=false;alN=0;ring();try{navigator.vibrate&&navigator.vibrate([500,200,500,200,800])}catch(e){}clearInterval(alT);alT=setInterval(()=>{if(++alN>=15){alarmStop();return}ring();try{navigator.vibrate&&navigator.vibrate([400,150,400])}catch(e){}},4000)}
+function alarmStop(){clearInterval(alT);$('#alarm').hidden=true;try{bellAud.pause()}catch(e){}}
+$('#alOk').addEventListener('click',()=>{alarmStop();try{speakOut('Bentornato! Dai, si riparte.','it')}catch(e){}});
+// schermo sempre acceso durante studio e pausa, così il timer non si ferma e la campanella suona
+let wakeL=null;async function wake(on){try{if(on&&!wakeL&&'wakeLock' in navigator){wakeL=await navigator.wakeLock.request('screen');wakeL.addEventListener('release',()=>{wakeL=null})}else if(!on&&wakeL){await wakeL.release();wakeL=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&fz)wake(true)});
 function chime(kind){const a=audioCtx();if(!a)return;const notes=kind==='fine-pausa'?[523.25,659.25,783.99,1046.5]:[783.99,659.25,523.25];const t0=a.currentTime+.05;
  const rep=kind==='fine-pausa'?2:1;for(let r=0;r<rep;r++)notes.forEach((f,i)=>{const t=t0+r*1.4+i*.22,o=a.createOscillator(),g=a.createGain(),o2=a.createOscillator(),g2=a.createGain();
   o.type='sine';o.frequency.value=f;o2.type='sine';o2.frequency.value=f*2;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.35,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+1.2);g2.gain.setValueAtTime(0,t);g2.gain.linearRampToValueAtTime(.08,t+.02);g2.gain.exponentialRampToValueAtTime(.001,t+.6);
@@ -1390,14 +1413,14 @@ function chime(kind){const a=audioCtx();if(!a)return;const notes=kind==='fine-pa
  try{navigator.vibrate&&navigator.vibrate(kind==='fine-pausa'?[300,150,300,150,500]:[250])}catch(e){}}
 async function notify(title,body){try{if(!('Notification' in window)||Notification.permission!=='granted'||document.visibilityState==='visible')return;const r=await navigator.serviceWorker?.getRegistration();if(r)r.showNotification(title,{body,icon:'icon-192.png',tag:'prof-timer',renotify:true,vibrate:[300,150,300]});else new Notification(title,{body})}catch(e){}}
 function askNotify(){try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(e){}}
-function startPause(min,why){min=Math.max(1,Math.min(30,Math.round(min)||5));fz={phase:'pausa',end:Date.now()+min*60000,tot:min*60};ls.set('prof-focus',fz);askNotify();drawFocus();toast(why||`Pausa di ${min} minuti: alzati e muoviti, ti avviso io quando è finita.`)}
+function startPause(min,why){min=Math.max(1,Math.min(30,Math.round(min)||5));fz={phase:'pausa',end:Date.now()+min*60000,tot:min*60};ls.set('prof-focus',fz);askNotify();wake(true);drawFocus();toast(why||`Pausa di ${min} minuti: alzati e muoviti, ti avviso io quando è finita.`)}
 function pauseFromProf(t){const m=String(t).match(/pausa\s+di\s+(\d{1,2})\s*min|(\d{1,2})\s*minuti\s+di\s+pausa/i);if(!m||fz?.phase==='pausa')return;startPause(+(m[1]||m[2]),`Il prof ti dà ${+(m[1]||m[2])} minuti di pausa: ti avviso io con un suono quando è finita.`)}
 function drawFocus(){const el=$('#focus');if(!fz){el.innerHTML='<button class="bbtn" id="fzGo">Inizia 30 minuti di studio</button>';return}
  const left=Math.max(0,(fz.end-Date.now())/1000),tot=fz.tot||(fz.phase==='studio'?1800:300);
  el.innerHTML=`<span>${fz.phase==='studio'?'Concentrazione':'Pausa'}</span><b>${fmtT(left)}</b><span class="bar"><i style="width:${(1-left/tot)*100}%"></i></span><button class="bbtn" id="fzStop">Stop</button>`}
-function tick(){if(!fz)return;if(Date.now()>=fz.end){if(fz.phase==='studio'){fz={phase:'pausa',end:Date.now()+300000,tot:300};chime('fine-studio');notify('Bravo, 30 minuti fatti!','Ora 5 minuti di pausa: alzati e muoviti.');toast('Bravo! 30 minuti fatti. Ora 5 minuti di pausa: alzati e muoviti.')}
- else{fz=null;chime('fine-pausa');notify('Pausa finita!','Torna dal prof: si riparte.');toast('Pausa finita: si riparte!');setTimeout(()=>{try{speakOut('La pausa è finita! Dai, si riparte.','it')}catch(e){}},2600)}ls.set('prof-focus',fz)}drawFocus()}
-$('#focus').addEventListener('click',e=>{if(e.target.id==='fzGo'){fz={phase:'studio',end:Date.now()+1800000,tot:1800};audioCtx();askNotify()}else if(e.target.id==='fzStop')fz=null;else return;ls.set('prof-focus',fz);drawFocus()});
+function tick(){if(!fz)return;if(Date.now()>=fz.end){if(fz.phase==='studio'){fz={phase:'pausa',end:Date.now()+300000,tot:300};ring();notify('Bravo, 30 minuti fatti!','Ora 5 minuti di pausa: alzati e muoviti.');toast('Bravo! 30 minuti fatti. Ora 5 minuti di pausa: alzati e muoviti.')}
+ else{fz=null;alarmStart();notify('Pausa finita!','Torna dal prof: si riparte.');wake(false)}ls.set('prof-focus',fz)}drawFocus()}
+$('#focus').addEventListener('click',e=>{if(e.target.id==='fzGo'){fz={phase:'studio',end:Date.now()+1800000,tot:1800};audioCtx();askNotify();wake(true)}else if(e.target.id==='fzStop'){fz=null;wake(false)}else return;ls.set('prof-focus',fz);drawFocus()});
 fzT=setInterval(tick,1000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')tick()});
 
@@ -1526,6 +1549,7 @@ function vzFill(){if(!('speechSynthesis' in window)){$('#vzNote').textContent='Q
  $('#vzRate').value=ls.get('prof-vrate',1);$('#vzPitch').value=ls.get('prof-vpitch',1);
  $('#vzNote').textContent=V.filter(v=>v.lang.toLowerCase().startsWith('it')).length<=1?'Ci sono poche voci: scaricane altre dalle impostazioni del dispositivo (vedi le istruzioni che ti ha dato Claude).':''}
 if('speechSynthesis' in window)speechSynthesis.addEventListener?.('voiceschanged',()=>{if(location.hash==='#impostazioni'&&setOpen)vzFill()});
+$('#bellTry').addEventListener('click',()=>ring());
 $('#nvOn').checked=!!ls.get('prof-neural',true);$('#nvVoice').value=ls.get('prof-nvoice','cedar');
 $('#nvOn').addEventListener('change',e=>{ls.set('prof-neural',e.target.checked);nOff=0});$('#nvVoice').addEventListener('change',e=>{ls.set('prof-nvoice',e.target.value);nOff=0});
 $('#nvTry').addEventListener('click',async()=>{const n=$('#nvNote');if(!window.__aiTts){n.textContent='Non disponibile qui.';return}n.textContent='Preparo la voce…';shush();
