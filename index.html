@@ -547,7 +547,8 @@ summary{font-family:Anton,Impact,sans-serif;font-weight:400;letter-spacing:.4px;
    <div class="card"><h3>Voce naturale</h3><p class="hint">Voce realistica di OpenAI, come una persona vera (circa 1,5 centesimi al minuto di parlato). Se non è collegata o il credito finisce, il prof usa la voce del dispositivo qui sotto.</p>
     <label class="tog"><input type="checkbox" id="nvOn">Usa la voce naturale</label>
     <label class="f" for="nvVoice">Voce</label><select id="nvVoice"><option value="cedar">Cedar · maschile, calda</option><option value="ash">Ash · maschile, chiara</option><option value="verse">Verse · maschile, espressiva</option><option value="echo">Echo · maschile, tranquilla</option><option value="marin">Marin · femminile, naturale</option><option value="coral">Coral · femminile, allegra</option><option value="sage">Sage · femminile, calma</option><option value="ballad">Ballad · morbida</option></select>
-    <div class="row" style="margin-top:10px"><button class="btn sm" id="nvTry">Prova la voce naturale</button><button class="btn sm" id="bellTry">Prova la campanella della pausa</button></div><p class="hint" id="nvNote"></p></div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" id="nvTry">Prova la voce naturale</button><button class="btn sm" id="bellTry">Prova la campanella della pausa</button></div></div>
+   <div class="card"><h3>Chat in ordine</h3><p class="hint">Se in una materia sono finiti messaggi di un'altra, il prof li sposta nella chat giusta.</p><div class="row"><button class="btn sm" id="sortTry">Riordina le chat per materia</button></div><p class="hint" id="sortNote"></p><p class="hint" id="nvNote"></p></div>
    <div class="card"><h3>Voce del prof</h3><p class="hint">Sono le voci installate su questo dispositivo: prova e scegli la più naturale. La scelta vale per questo dispositivo.</p>
     <label class="f" for="vzIt">Voce italiana</label><select id="vzIt"></select>
     <label class="f" for="vzEn">Voce inglese (English speaking)</label><select id="vzEn"></select>
@@ -588,7 +589,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2600)};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const fmtT=x=>Math.floor(x/60)+':'+String(Math.floor(x%60)).padStart(2,'0');
-const fmt=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^#+\s*/gm,'');
+const fmt=t=>esc(String(t).replace(/\s*\[\[\s*MATERIA\s*:[^\]]*\]\]/gi,'')).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^#+\s*/gm,'');
 const parseJSON=t=>{try{const m=String(t).match(/\{[\s\S]*\}/);return m?JSON.parse(m[0]):null}catch(e){return null}};
 const ls={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 
@@ -826,8 +827,11 @@ const dayDiff=d=>d?Math.round((new Date(d+'T12:00')-new Date(today()+'T12:00'))/
 const dueLbl=d=>{if(!d)return ['senza data',''];const n=dayDiff(d);const w=new Date(d+'T12:00').toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});return n<0?['scaduto · '+w,'today']:n===0?['oggi','today']:n===1?['per domani','today']:n<=3?['per '+w,'soon']:['per '+w,'']};
 let cChain=Promise.resolve();
 function saveCompiti(){ls.set('prof-compiti-v1',compiti);if(ccol){const body={kind:'compiti',items:JSON.parse(JSON.stringify(compiti.slice(-150)))};cChain=cChain.then(()=>ccol.set(body)).catch(()=>{})}}
-function compitiTxt(){const L=compiti.filter(c=>!c.done&&dayDiff(c.consegna)>=-1).sort((a,b)=>(a.consegna||'9').localeCompare(b.consegna||'9')).slice(0,25);
- const d=new Date();return `OGGI È ${d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.\nCOMPITI DA FARE (dal registro):\n`+(L.length?L.map(c=>`- [${c.consegna||'senza data'}] ${c.materia}: ${c.testo}${c.tipo?' ('+c.tipo+')':''}`).join('\n'):'nessun compito caricato')}
+function compitiTxt(k){const all=compiti.filter(c=>!c.done&&dayDiff(c.consegna)>=-1).sort((a,b)=>(a.consegna||'9').localeCompare(b.consegna||'9'));
+ const one=k&&k!=='organizzazione';const L=(one?all.filter(c=>matKey(c.materia)===k):all).slice(0,25);
+ const d=new Date();let t=`OGGI È ${d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}.\nCOMPITI DA FARE${one?' DI '+matName(k).toUpperCase():''} (dal registro):\n`+(L.length?L.map(c=>`- [${c.consegna||'senza data'}] ${c.materia}: ${c.testo}${c.tipo?' ('+c.tipo+')':''}`).join('\n'):'nessuno');
+ if(one){const o=[...new Set(all.filter(c=>matKey(c.materia)!==k).map(c=>matName(matKey(c.materia))))];if(o.length)t+=`\n(Ci sono compiti anche di: ${o.join(', ')}. NON farli in questa chat: si fanno nella chat della loro materia.)`}
+ return t}
 async function readCompiti(files){const st=$('#cStatus');if(!sample){$('#noAI').hidden=false;st.textContent='Il prof non è attivo: puoi aggiungere i compiti a mano qui sotto.';return}
  if(!imgOK){st.textContent='Il prof non può leggere le immagini qui: aggiungi i compiti a mano.';return}
  st.textContent='Preparo le immagini…';const imgs=await filesToImages(files,6);if(!imgs.length){st.textContent='';return}
@@ -1031,6 +1035,7 @@ ${ME().memoria||'(ancora niente)'}
 I TUOI APPUNTI SU ADRIANO IN ${matName(mat).toUpperCase()}:
 ${c.memoria||'(ancora nessuno: è la prima volta)'}
 REGOLE:
+${mat!=='organizzazione'?`- QUESTA CHAT È SOLO DI ${matName(mat).toUpperCase()}. Non lavorare qui su altre materie. Se Adriano chiede o comincia un'altra materia (per esempio scienze mentre siete in italiano), rispondi solo con una frase breve tipo "Questa è roba di Scienze: andiamo nella sua chat!" e aggiungi alla fine il codice [[MATERIA:chiave]] con una di queste chiavi: ${MATERIE.map(x=>x[0]).filter(x=>x!=='organizzazione').join(', ')}. L'app sposta la domanda nella chat giusta.`:'- Questa è la chat di organizzazione: per studiare una materia indica la chat giusta con [[MATERIA:chiave]] (chiavi: '+MATERIE.map(x=>x[0]).filter(x=>x!=='organizzazione').join(', ')+').'}
 - Un passo alla volta: UNA domanda o UNA consegna per messaggio.
 - Non fare il lavoro al posto suo: guidalo con domande; se è bloccato dai un indizio o un esempio breve.
 - Messaggi brevi, massimo 90 parole (tranne in modalità Lezione), testo semplice (puoi usare **grassetto** per i termini chiave, niente titoli né tabelle).
@@ -1049,7 +1054,7 @@ ${schedaTxt(get(pId))}
 ${altri.length?'Altri argomenti di questa materia già nelle sue schede: '+altri.join('; '):''}
 ${booksTxt(get(pId)||(mat!=='organizzazione'?{materia:matName(mat)}:null))}
 ${lezTxt()}
-${compitiTxt()}
+${compitiTxt(mat)}
 ${mat!=='organizzazione'?`LIVELLO DI PREPARAZIONE (gioco dell'app): ${L_(mat).lv==null?'non ancora misurato: appena possibile fai una piccola prova e dai il voto indicativo':'attuale '+fmtV(Math.floor(L_(mat).lv*2)/2)+(L_(mat).src==='scuola'?' (preso dai voti veri di scuola: è il punto di partenza reale)':'')+', obiettivo '+goalOf(mat)}. Usa ogni tanto frasi da videogioco motivanti, tipo "ora sei a 4, arriviamo a 6!" o "sei a 6, adesso alziamo la media!". Ogni voto indicativo più alto è un livello in più.`:''}
 ${verificheTxt(mat)}
 ${votiTxt(mat)}
@@ -1065,7 +1070,7 @@ async function talk(){if(!sample||busy)return;busy=true;$('#send').disabled=true
  if(msgs[msgs.length-1].role!=='user')msgs.push({role:'user',content:'(continua)'});
  ctrl=new AbortController();
  const ti=await talkImages(),c0=C(k);const web=!bp?.txt&&mat!=='organizzazione';c0.sentPg=c0.sentPg||'';const pgKey=(get(pId)?.bookId||'')+'|'+(get(pId)?.pagine||'');const pimgs=bp?.imgs?.length&&c0.sentPg!==pgKey?bp.imgs:[];
- try{const r=await ai(msgs,{images:[...pimgs,...ti.out].slice(0,8),web,complex:(C(k).qual==='alta')||(ti.out.length+pimgs.length>0&&C(k).qual!=='eco-only'),signal:ctrl.signal,onText:({text})=>{if(k===mat)drawChat(text)}});const t=r.text.trim();c0.sent=[...new Set([...(c0.sent||[]),...ti.ids])].slice(-200);if(pimgs.length)c0.sentPg=pgKey;target.push({role:'assistant',content:t,t:Date.now()});saveChat(k);if(k===mat&&$('#voiceOn').checked)speakOut(t);if(k===mat)pauseFromProf(t);gameFromProf(t,k);updMemory(k)}
+ try{const r=await ai(msgs,{images:[...pimgs,...ti.out].slice(0,8),web,complex:(C(k).qual==='alta')||(ti.out.length+pimgs.length>0&&C(k).qual!=='eco-only'),signal:ctrl.signal,onText:({text})=>{if(k===mat)drawChat(text)}});const t=r.text.trim();c0.sent=[...new Set([...(c0.sent||[]),...ti.ids])].slice(-200);if(pimgs.length)c0.sentPg=pgKey;target.push({role:'assistant',content:t,t:Date.now()});saveChat(k);if(k===mat&&$('#voiceOn').checked)speakOut(t);if(k===mat)pauseFromProf(t);gameFromProf(t,k);routeFromProf(t,k);updMemory(k)}
  catch(e){if(e?.name!=='AbortError'&&e?.code!=='aborted')target.push({role:'assistant',content:aiErr(e),t:Date.now(),err:1})}
  busy=false;$('#send').disabled=false;if(k===mat){drawChat();scrollEnd()}}
 async function updMemory(k){const c=C(k);const n=c.messages.length;if(!sample||n-c.memAt<8)return;c.memAt=n;
@@ -1074,7 +1079,7 @@ async function updMemory(k){const c=C(k);const n=c.messages.length;if(!sample||n
 Appunti di materia attuali:\n<<<${c.memoria||'(vuoti)'}>>>
 Appunti personali attuali (cose che Adriano ha raccontato di sé):\n<<<${ME().memoria||'(vuoti)'}>>>
 Conversazione recente:\n<<<${recent}>>>
-Rispondi SOLO con JSON: {"materia":"appunti completi per ${matName(k)}, max 180 parole, elenco con - : argomenti affrontati e a che punto è, cosa ha capito bene, errori ricorrenti, cosa ripassare, prossimo passo concordato","personale":"appunti personali completi, max 120 parole, elenco con - : interessi, passioni, impegni in arrivo (partite, verifiche), cosa lo motiva o lo annoia, modi di dire o battute che usa, preferenze su come studiare","voti_detti":[{"voto":"6+","tipo":"scritto|orale","argomento":"…","com_e_andata":"…"}]}
+Rispondi SOLO con JSON: {"materia":"appunti completi per ${matName(k)} (SOLO su questa materia: togli tutto quello che riguarda altre materie), max 180 parole, elenco con - : argomenti affrontati e a che punto è, cosa ha capito bene, errori ricorrenti, cosa ripassare, prossimo passo concordato","personale":"appunti personali completi, max 120 parole, elenco con - : interessi, passioni, impegni in arrivo (partite, verifiche), cosa lo motiva o lo annoia, modi di dire o battute che usa, preferenze su come studiare","voti_detti":[{"voto":"6+","tipo":"scritto|orale","argomento":"…","com_e_andata":"…"}]}
 In "voti_detti" metti SOLO i voti che Adriano ha detto esplicitamente di aver preso in questa conversazione in ${matName(k)} (altrimenti lista vuota).
 Regole: solo fatti detti da lui o emersi dallo studio; niente giudizi sulla persona; non annotare mai informazioni su salute, diagnosi, famiglia privata o altre cose delicate; mantieni quello che negli appunti attuali serve ancora.`;
  try{const r=await ai(pr,{quick:true});const j=parseJSON(r.text);if(j?.materia){c.memoria=String(j.materia).slice(0,2500);saveChat(k)}if(j?.personale){ME().memoria=String(j.personale).slice(0,1800);saveChat('_adriano')}if(Array.isArray(j?.voti_detti)&&k!=='organizzazione')for(const v of j.voti_detti){const lab=String(v.voto||'').trim(),num=vNum(lab);if(isNaN(num))continue;if(voti.some(x=>matKey(x.materia)===k&&x.label===lab&&Date.now()-(x.added||0)<10*864e5))continue;const pc=pendingFb(k)[0];voti.push({id:'v'+uid(),materia:matName(k),data:pc?.consegna||today(),label:lab,n:num,tipo:String(v.tipo||(pc&&/interrog/i.test(pc.testo)?'orale':'scritto')),argomento:String(v.argomento||pc?.argomento||pc?.testo||''),note:String(v.com_e_andata||''),errori:'',peso:1,from:'chat',compitoId:pc?.id||'',added:Date.now()});if(pc){pc.fb=true;saveCompiti()}saveVoti()}}catch(e){c.memAt=Math.max(0,n-8)}}
@@ -1298,6 +1303,30 @@ function voteCelebrate(k,label,before){const n=vNum(label);if(isNaN(n))return;co
  if(n>=6&&(isNaN(before)||before<6||n>before))levelUp('VOTO IN PAGELLA',fmtV(n),`${matName(k)}: ${n>=6?'sufficienza! ':''}${!isNaN(before)&&after>before?`La media sale da ${before.toFixed(1)} a ${after.toFixed(1)}!`:'Continua così!'}`,Math.min(5,Math.max(2,Math.floor(n)-4)))
  else if(!isNaN(before)&&after>before)levelUp('MEDIA SU',after.toFixed(1),`${matName(k)}: la media sale da ${before.toFixed(1)} a ${after.toFixed(1)}!`,2)
  else if(n<6)levelDown(`${fmtV(n)} in ${matName(k)}. Game over? No: si riparte dal livello e si recupera. Tocca "Recupera insufficienza"!`)}
+
+/* ---------- ogni argomento nella sua chat ---------- */
+const MKEYS=()=>MATERIE.map(x=>x[0]);
+function routeFromProf(t,k){const m=String(t).match(/\[\[\s*MATERIA\s*:\s*([a-z-]+)\s*\]\]/i);if(!m)return;const to=matKey(m[1])===m[1]?m[1]:matKey(m[1]);if(!MKEYS().includes(to)||to===k)return;
+ const src=C(k).messages;let i=src.length-1;while(i>=0&&src[i].role!=='user')i--;if(i<0)return;const q=src[i];
+ src.splice(i);saveChat(k);const dst=C(to);dst.messages.push({...q,t:Date.now(),moved:k});saveChat(to);
+ toast(`Ti porto nella chat di ${matName(to)}`);setTimeout(()=>{setMat(to);renderProf();talk()},400)}
+// riordino delle chat già esistenti: il prof legge gli scambi e sposta quelli finiti nella materia sbagliata
+async function sortChats(force){if(!sample)return;const keys=MKEYS().filter(k=>k!=='organizzazione'&&C(k).messages.filter(m=>!m.hidden&&!m.err).length>=2&&(force||!C(k).sorted1));
+ let moved=0;for(const k of keys){const c=C(k),M=c.messages;const ex=[];let cur=null;
+  M.forEach((m,i)=>{if(m.role==='user'){cur={i0:i,i1:i,txt:'A: '+String(m.content).slice(0,260)};ex.push(cur)}else if(cur){cur.i1=i;if(m.role==='assistant')cur.txt+='\nP: '+String(m.content).slice(0,260)}});
+  const cand=ex.filter(e=>!M[e.i0].hidden||/Oggi per|devo fare|Prof,/.test(M[e.i0].content));if(!cand.length){c.sorted1=1;saveChat(k);continue}
+  const pr=`Questa è la chat di ${matName(k)} di uno studente di prima liceo scientifico. Sotto ci sono gli scambi numerati (A = studente, P = prof).
+Trova gli scambi che parlano CHIARAMENTE di un'altra materia (per esempio passaggi di stato o miscugli = scienze; vettori o forze = fisica; declinazioni latine = latino; equazioni, potenze, insiemi = matematica; popoli antichi = geostoria; grammatica italiana, epica, romanzo = italiano). Saluti, organizzazione, pause e domande generiche restano dove sono.
+Chiavi possibili: ${MKEYS().filter(x=>x!=='organizzazione').join(', ')}.
+Rispondi SOLO con JSON: {"sposta":[{"n":3,"materia":"scienze"}]} (lista vuota se è tutto a posto).
+
+${cand.map((e,j)=>`#${j}\n${e.txt}`).join('\n\n').slice(-30000)}`;
+  try{const r=await ai(pr,{quick:true});const j=parseJSON(r.text)||{};const S=(j.sposta||[]).filter(x=>cand[x.n]&&MKEYS().includes(x.materia)&&x.materia!==k);
+   if(S.length){const take=new Set();const by={};for(const x of S){const e=cand[x.n];for(let i=e.i0;i<=e.i1;i++){take.add(i);(by[x.materia]=by[x.materia]||[]).push({...M[i],moved:k})}}
+    const keep=M.filter((_,i)=>!take.has(i));M.length=0;M.push(...keep);c.memAt=0;for(const to in by){const d=C(to);d.messages.push(...by[to]);d.messages.sort((a,b)=>(a.t||0)-(b.t||0));d.memAt=0;saveChat(to);moved+=by[to].length}}
+   c.sorted1=1;saveChat(k)}catch(e){}}
+ if(moved){toast(`Ho rimesso in ordine le chat: ${moved} messaggi spostati nella materia giusta`);drawChat()}
+ return moved}
 /* ---------- appunti da stampare (quaderno) ---------- */
 let dispense=ls.get('prof-dispense-v1',[]),dCur=null;
 function saveDisp(d){ls.set('prof-dispense-v1',dispense);if(col)col.doc('disp-'+d.id).set(JSON.parse(JSON.stringify(d))).catch(()=>toast('Appunti salvati solo su questo dispositivo'))}
@@ -1362,7 +1391,7 @@ $('#pend').addEventListener('click',e=>{const d=e.target.closest('[data-del]');i
 $('#chat').addEventListener('click',e=>{const b=e.target.closest('[data-say]');if(b){speakOut(chat[+b.dataset.say].content);return}const v=e.target.closest('[data-view]');if(v){const [i,j]=v.dataset.view.split(':');lightbox(chat[+i].imgs[+j])}});
 
 /* ---------- voce ---------- */
-function speechClean(t){return String(t).replace(/\p{Extended_Pictographic}/gu,'').replace(/^\s*(?:[-•*+]|\d+[.)])\s+/gm,'').replace(/→/g,', quindi, ').replace(/←/g,', deriva da, ').replace(/↑/g,' aumenta ').replace(/↓/g,' diminuisce ').replace(/[*_`#~>|\[\]{}]/g,' ').replace(/\s+([,.;:!?])/g,'$1').replace(/[ \t]{2,}/g,' ')}
+function speechClean(t){return String(t).replace(/\[\[[^\]]*\]\]/g,'').replace(/\p{Extended_Pictographic}/gu,'').replace(/^\s*(?:[-•*+]|\d+[.)])\s+/gm,'').replace(/→/g,', quindi, ').replace(/←/g,', deriva da, ').replace(/↑/g,' aumenta ').replace(/↓/g,' diminuisce ').replace(/[*_`#~>|\[\]{}]/g,' ').replace(/\s+([,.;:!?])/g,'$1').replace(/[ \t]{2,}/g,' ')}
 function voiceLines(text,lang){const parts=speechClean(text).split(/\n+/).map(x=>x.trim()).filter(Boolean);
  return parts.map(t=>({text:t.replace(/^in italiano\s*:\s*/i,'').slice(0,1900),language:lang||(mode==='inglese'?(isIta(t)?'it':'en'):'it')}))}
 function isIta(t){if(/^in italiano\s*:/i.test(t)||/^correzione\s*:/i.test(t))return true;const w=t.toLowerCase().match(/[a-zàèéìòù']+/g)||[];
@@ -1573,6 +1602,7 @@ function vzFill(){if(!('speechSynthesis' in window)){$('#vzNote').textContent='Q
  $('#vzNote').textContent=V.filter(v=>v.lang.toLowerCase().startsWith('it')).length<=1?'Ci sono poche voci: scaricane altre dalle impostazioni del dispositivo (vedi le istruzioni che ti ha dato Claude).':''}
 if('speechSynthesis' in window)speechSynthesis.addEventListener?.('voiceschanged',()=>{if(location.hash==='#impostazioni'&&setOpen)vzFill()});
 $('#bellTry').addEventListener('click',()=>ring());
+$('#sortTry').addEventListener('click',async()=>{$('#sortNote').textContent='Il prof sta controllando tutte le chat…';const n=await sortChats(true);$('#sortNote').textContent=n?`Fatto: ${n} messaggi spostati.`:'Tutto in ordine: nessun messaggio fuori posto.'});
 $('#nvOn').checked=!!ls.get('prof-neural',true);$('#nvVoice').value=ls.get('prof-nvoice','cedar');
 $('#nvOn').addEventListener('change',e=>{ls.set('prof-neural',e.target.checked);nOff=0});$('#nvVoice').addEventListener('change',e=>{ls.set('prof-nvoice',e.target.value);nOff=0});
 $('#nvTry').addEventListener('click',async()=>{const n=$('#nvNote');if(!window.__aiTts){n.textContent='Non disponibile qui.';return}n.textContent='Preparo la voce…';shush();
@@ -1604,6 +1634,7 @@ const use=n=>{try{return Promise.resolve(window.claude?.use?.(n)).catch(()=>null
   for(const k of Object.keys(chats))if(!snap.docs.some(x=>x.id==='chat-'+k))saveChat(k);
   for(const l of lezioni)if(!snap.docs.some(x=>x.id==='lez-'+l.id))saveLez(l);for(const x of dispense)if(!snap.docs.some(y=>y.id==='disp-'+x.id))saveDisp(x);dispense.sort((a,b)=>b.date-a.date);ls.set('prof-dispense-v1',dispense);lezioni.sort((a,b)=>b.date-a.date);ls.set('prof-lezioni-v1',lezioni);
   ls.set('prof-arcs',arcIdx);ls.set('prof-chats-v1',chats);setMat(mat);
+  setTimeout(()=>sortChats(false),4000);
   try{setDoc=c.doc('impostazioni');const sd=await lim(setDoc.get());if(sd.exists&&sd.data().pin){pinHash=sd.data().pin;ls.set('prof-pin',pinHash)}else if(pinHash)setDoc.set({pin:pinHash}).catch(()=>{})}catch(e){}
   try{const pd=c.doc('programma');const ps=await lim(pd.get());pcol=pd;const items=ps.exists?(ps.data().items||[]):[];const ids4=new Set(items.map(i=>i.id));programma=[...items.map(i=>JSON.parse(JSON.stringify(i))),...programma.filter(i=>!ids4.has(i.id))];savePrProg()}catch(e){pcol=null}
   seedProgramma();
