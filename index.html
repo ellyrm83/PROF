@@ -1311,20 +1311,22 @@ function routeFromProf(t,k){const m=String(t).match(/\[\[\s*MATERIA\s*:\s*([a-z-
  src.splice(i);saveChat(k);const dst=C(to);dst.messages.push({...q,t:Date.now(),moved:k});saveChat(to);
  toast(`Ti porto nella chat di ${matName(to)}`);setTimeout(()=>{setMat(to);renderProf();talk()},400)}
 // riordino delle chat già esistenti: il prof legge gli scambi e sposta quelli finiti nella materia sbagliata
-async function sortChats(force){if(!sample)return;const keys=MKEYS().filter(k=>k!=='organizzazione'&&C(k).messages.filter(m=>!m.hidden&&!m.err).length>=2&&(force||!C(k).sorted1));
+async function sortChats(force){if(!sample)return;const keys=MKEYS().filter(k=>k!=='organizzazione'&&C(k).messages.filter(m=>!m.hidden&&!m.err).length>=2&&(force||!C(k).sorted2));
  let moved=0;for(const k of keys){const c=C(k),M=c.messages;const ex=[];let cur=null;
   M.forEach((m,i)=>{if(m.role==='user'){cur={i0:i,i1:i,txt:'A: '+String(m.content).slice(0,260)};ex.push(cur)}else if(cur){cur.i1=i;if(m.role==='assistant')cur.txt+='\nP: '+String(m.content).slice(0,260)}});
-  const cand=ex.filter(e=>!M[e.i0].hidden||/Oggi per|devo fare|Prof,/.test(M[e.i0].content));if(!cand.length){c.sorted1=1;saveChat(k);continue}
+  const cand=ex;if(!cand.length){c.sorted2=1;saveChat(k);continue}
   const pr=`Questa è la chat di ${matName(k)} di uno studente di prima liceo scientifico. Sotto ci sono gli scambi numerati (A = studente, P = prof).
-Trova gli scambi che parlano CHIARAMENTE di un'altra materia (per esempio passaggi di stato o miscugli = scienze; vettori o forze = fisica; declinazioni latine = latino; equazioni, potenze, insiemi = matematica; popoli antichi = geostoria; grammatica italiana, epica, romanzo = italiano). Saluti, organizzazione, pause e domande generiche restano dove sono.
+Trova gli scambi che parlano di un'altra materia. ATTENZIONE: tutta la CHIMICA (atomi, molecole, elementi, composti, sostanze pure, miscugli e metodi di separazione, soluzioni, solubilità e concentrazione, colloidi, stati della materia e passaggi di stato, grandezze intensive ed estensive, misure e unità di misura in laboratorio, metodo scientifico in scienze) e la biologia e scienze della terra = scienze; vettori, forze, campi, notazione scientifica in fisica = fisica; declinazioni e verbi latini, traduzioni dal latino = latino; numeri, potenze, frazioni, equazioni, insiemi, percentuali, geometria = matematica; preistoria, popoli antichi, geografia = geostoria; grammatica italiana, analisi logica, epica, Iliade, romanzi, temi = italiano.
+Argomenti fatti in classe per materia (per aiutarti a riconoscerli): ${MKEYS().filter(x=>x!=='organizzazione'&&x!==k).map(x=>{const L=programma.filter(p=>matKey(p.materia)===x).slice(-12).map(p=>p.argomento.slice(0,50));return L.length?x+': '+L.join('; '):''}).filter(Boolean).join('\n')}
+Sposta anche gli scambi in cui il prof spiega o fa esercizi di un'altra materia, anche se lo studente ha scritto solo "ok" o "vai avanti". Saluti, organizzazione, pause e domande generiche restano dove sono.
 Chiavi possibili: ${MKEYS().filter(x=>x!=='organizzazione').join(', ')}.
 Rispondi SOLO con JSON: {"sposta":[{"n":3,"materia":"scienze"}]} (lista vuota se è tutto a posto).
 
 ${cand.map((e,j)=>`#${j}\n${e.txt}`).join('\n\n').slice(-30000)}`;
-  try{const r=await ai(pr,{quick:true});const j=parseJSON(r.text)||{};const S=(j.sposta||[]).filter(x=>cand[x.n]&&MKEYS().includes(x.materia)&&x.materia!==k);
+  try{const r=await ai(pr,{complex:true});const j=parseJSON(r.text)||{};const S=(j.sposta||[]).filter(x=>cand[x.n]&&MKEYS().includes(x.materia)&&x.materia!==k);
    if(S.length){const take=new Set();const by={};for(const x of S){const e=cand[x.n];for(let i=e.i0;i<=e.i1;i++){take.add(i);(by[x.materia]=by[x.materia]||[]).push({...M[i],moved:k})}}
     const keep=M.filter((_,i)=>!take.has(i));M.length=0;M.push(...keep);c.memAt=0;for(const to in by){const d=C(to);d.messages.push(...by[to]);d.messages.sort((a,b)=>(a.t||0)-(b.t||0));d.memAt=0;saveChat(to);moved+=by[to].length}}
-   c.sorted1=1;saveChat(k)}catch(e){}}
+   c.sorted2=1;saveChat(k)}catch(e){}}
  if(moved){toast(`Ho rimesso in ordine le chat: ${moved} messaggi spostati nella materia giusta`);drawChat()}
  return moved}
 /* ---------- appunti da stampare (quaderno) ---------- */
